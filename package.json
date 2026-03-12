@@ -38,6 +38,10 @@
       {
         "command": "github-sync.initConfig",
         "title": "GitHub Sync: Init Config"
+      },
+      {
+        "command": "github-sync.showOutput",
+        "title": "GitHub Sync: Show Output"
       }
     ],
     "configuration": {

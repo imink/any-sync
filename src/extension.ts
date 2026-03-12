@@ -4,12 +4,15 @@ import { AuthManager } from './github/authManager';
 import { GitHubClient } from './github/githubClient';
 import { SyncEngine } from './sync/syncEngine';
 import { pickMappings } from './ui/quickPick';
+import { StatusBar } from './ui/statusBar';
 
 let syncEngine: SyncEngine | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel('GitHub Sync');
   outputChannel.appendLine('GitHub Sync extension activating...');
+
+  const statusBar = new StatusBar(outputChannel);
 
   // Initialize core services
   const configManager = new ConfigManager();
@@ -71,8 +74,13 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
+  const showOutputCommand = vscode.commands.registerCommand('github-sync.showOutput', () => {
+    outputChannel.show();
+  });
+
   context.subscriptions.push(
     outputChannel,
+    statusBar,
     configManager,
     authManager,
     githubClient,
@@ -81,6 +89,7 @@ export function activate(context: vscode.ExtensionContext): void {
     pullSelectCommand,
     pushCommand,
     pushSelectCommand,
+    showOutputCommand,
   );
 
   if (syncEngine) {
