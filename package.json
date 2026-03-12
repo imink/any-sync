@@ -1,6 +1,6 @@
 {
-  "name": "github-sync",
-  "displayName": "GitHub Sync",
+  "name": "skills-sync",
+  "displayName": "Skills Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
   "version": "0.1.0",
   "engines": {
