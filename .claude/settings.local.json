@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/yuewang1/.claude/plugins/cache/**)",
+      "Read(//Users/yuewang1/.claude/plugins/cache/claude-plugins-official/**)",
+      "Read(//Users/yuewang1/.claude/plugins/cache/claude-plugins-official/superpowers/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f''''Total skills: {len\\(d[\"\"skills\"\"]\\)}''''\\)\")",
+      "Read(//Users/yuewang1/code/microsoft_skills_marketplace_forked/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(s[''''id'''']\\) for s in d[''''skills'''']]\")",
+      "Bash(cat ~/code/microsoft_skills_marketplace_forked/.claude/settings.local.json && echo \"===\" && ls ~/code/microsoft_skills_marketplace_forked/.vscode/ && cat ~/code/microsoft_skills_marketplace_forked/.vscode/*.json 2>/dev/null)",
+      "Bash(cat ~/code/microsoft_skills_marketplace_forked/.gitignore && echo \"===\" && git -C ~/code/microsoft_skills_marketplace_forked remote -v)",
+      "Read(//Users/yuewang1/.claude/plans/**)",
+      "WebSearch",
+      "Bash(git init:*)"
+    ]
+  }
+}
