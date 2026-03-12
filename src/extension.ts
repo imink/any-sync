@@ -1,41 +1,84 @@
 import * as vscode from 'vscode';
+import { ConfigManager } from './config/configManager';
+import { AuthManager } from './github/authManager';
+import { GitHubClient } from './github/githubClient';
+import { SyncEngine } from './sync/syncEngine';
+import { pickMappings } from './ui/quickPick';
+
+let syncEngine: SyncEngine | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel('GitHub Sync');
+  outputChannel.appendLine('GitHub Sync extension activating...');
 
-  // Register commands - implementations will be added in later steps
+  // Initialize core services
+  const configManager = new ConfigManager();
+  const authManager = new AuthManager(outputChannel);
+  const githubClient = new GitHubClient(authManager, outputChannel);
+
+  // Initialize config
+  configManager.initialize().catch((err) => {
+    outputChannel.appendLine(`GitHub Sync: Config initialization error: ${err}`);
+  });
+
+  // Create sync engine (only if workspace is open)
+  try {
+    syncEngine = new SyncEngine(configManager, authManager, githubClient, outputChannel);
+  } catch (err) {
+    outputChannel.appendLine(`GitHub Sync: Could not create SyncEngine: ${err}`);
+  }
+
+  // Register commands
+  const initConfigCommand = vscode.commands.registerCommand('github-sync.initConfig', async () => {
+    await configManager.initConfig();
+  });
+
   const pullCommand = vscode.commands.registerCommand('github-sync.pull', async () => {
-    vscode.window.showInformationMessage('GitHub Sync: Pull not yet implemented');
+    if (!syncEngine) {
+      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      return;
+    }
+    await syncEngine.pullAll();
+  });
+
+  const pullSelectCommand = vscode.commands.registerCommand('github-sync.pullSelect', async () => {
+    if (!syncEngine) {
+      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      return;
+    }
+    const selected = await pickMappings(configManager.mappings, 'pull');
+    if (selected) {
+      await syncEngine.pullMappings(selected);
+    }
   });
 
   const pushCommand = vscode.commands.registerCommand('github-sync.push', async () => {
     vscode.window.showInformationMessage('GitHub Sync: Push not yet implemented');
   });
 
-  const pullSelectCommand = vscode.commands.registerCommand('github-sync.pullSelect', async () => {
-    vscode.window.showInformationMessage('GitHub Sync: Pull (Select) not yet implemented');
-  });
-
   const pushSelectCommand = vscode.commands.registerCommand('github-sync.pushSelect', async () => {
     vscode.window.showInformationMessage('GitHub Sync: Push (Select) not yet implemented');
   });
 
-  const initConfigCommand = vscode.commands.registerCommand('github-sync.initConfig', async () => {
-    vscode.window.showInformationMessage('GitHub Sync: Init Config not yet implemented');
-  });
-
   context.subscriptions.push(
     outputChannel,
-    pullCommand,
-    pushCommand,
-    pullSelectCommand,
-    pushSelectCommand,
+    configManager,
+    authManager,
+    githubClient,
     initConfigCommand,
+    pullCommand,
+    pullSelectCommand,
+    pushCommand,
+    pushSelectCommand,
   );
+
+  if (syncEngine) {
+    context.subscriptions.push(syncEngine);
+  }
 
   outputChannel.appendLine('GitHub Sync extension activated');
 }
 
 export function deactivate(): void {
-  // Cleanup
+  syncEngine = undefined;
 }
