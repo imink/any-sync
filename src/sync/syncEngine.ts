@@ -3,6 +3,9 @@ import { ConfigManager } from '../config/configManager';
 import { AuthManager } from '../github/authManager';
 import { GitHubClient } from '../github/githubClient';
 import { PullManager, PullFileResult, PullResult } from './pullManager';
+import { PushManager, PushableFile } from './pushManager';
+import { PrCreator } from './prCreator';
+import { RestPushFallback } from './restPushFallback';
 import { Lockfile } from './lockfile';
 import { ConflictResolver } from '../conflict/conflictResolver';
 import { ProgressReporter } from '../ui/progressReporter';
@@ -13,6 +16,9 @@ import { SyncMapping } from '../config/schema';
  */
 export class SyncEngine implements vscode.Disposable {
   private readonly pullManager: PullManager;
+  private readonly pushManager: PushManager;
+  private readonly prCreator: PrCreator;
+  private readonly restPushFallback: RestPushFallback;
   private readonly lockfile: Lockfile;
   private readonly conflictResolver: ConflictResolver;
   private isSyncing = false;
@@ -30,6 +36,9 @@ export class SyncEngine implements vscode.Disposable {
 
     this.lockfile = new Lockfile(workspaceRoot);
     this.pullManager = new PullManager(this.githubClient, this.lockfile, this.outputChannel);
+    this.pushManager = new PushManager(this.lockfile, this.outputChannel);
+    this.prCreator = new PrCreator(this.githubClient, this.outputChannel);
+    this.restPushFallback = new RestPushFallback(this.githubClient, this.outputChannel);
     this.conflictResolver = new ConflictResolver();
   }
 
@@ -123,6 +132,107 @@ export class SyncEngine implements vscode.Disposable {
 
           // Show summary
           this.showPullSummary(allResults);
+        },
+      );
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
+   * Push all mappings.
+   */
+  async pushAll(): Promise<void> {
+    const mappings = this.configManager.mappings;
+    if (mappings.length === 0) {
+      vscode.window.showWarningMessage(
+        'GitHub Sync: No mappings configured. Run "GitHub Sync: Init Config" to set up.',
+      );
+      return;
+    }
+    await this.pushMappings(mappings);
+  }
+
+  /**
+   * Push selected mappings.
+   */
+  async pushMappings(mappings: SyncMapping[]): Promise<void> {
+    if (this.isSyncing) {
+      vscode.window.showWarningMessage('GitHub Sync: A sync operation is already in progress.');
+      return;
+    }
+
+    this.isSyncing = true;
+
+    try {
+      const token = await this.authManager.requireToken();
+      if (!token) {
+        return;
+      }
+
+      await this.lockfile.load();
+
+      await ProgressReporter.withProgress(
+        'GitHub Sync: Pushing...',
+        async (progress, cancellationToken) => {
+          for (let i = 0; i < mappings.length; i++) {
+            if (cancellationToken.isCancellationRequested) {
+              break;
+            }
+
+            const mapping = mappings[i];
+            progress.report({
+              message: `[${i + 1}/${mappings.length}] Detecting changes for ${mapping.name}...`,
+            });
+
+            const destRoot = this.configManager.resolveDestPath(mapping);
+            const changes = await this.pushManager.detectChanges(mapping, destRoot);
+
+            if (changes.length === 0) {
+              vscode.window.showInformationMessage(
+                `GitHub Sync: No local changes to push for "${mapping.name}".`,
+              );
+              continue;
+            }
+
+            // Show confirmation dialog
+            const fileList = changes.map((f) => f.relativePath).join(', ');
+            const confirm = await vscode.window.showWarningMessage(
+              `GitHub Sync: Push ${changes.length} changed file(s) for "${mapping.name}"?\n\nFiles: ${fileList}`,
+              { modal: true },
+              'Push & Create PR',
+              'Cancel',
+            );
+
+            if (confirm !== 'Push & Create PR') {
+              continue;
+            }
+
+            progress.report({ message: `Pushing ${changes.length} files...` });
+
+            // Try git first, fall back to REST API
+            let pushResult;
+            const gitAvailable = await this.pushManager.isGitAvailable();
+
+            if (gitAvailable) {
+              const commitMessage = changes.length === 1
+                ? `sync: Update ${changes[0].relativePath} via GitHub Sync`
+                : `sync: Update ${changes.length} files in ${mapping.sourcePath} via GitHub Sync`;
+
+              pushResult = await this.pushManager.pushViaGit(
+                mapping,
+                changes,
+                token,
+                commitMessage,
+              );
+            } else {
+              pushResult = await this.restPushFallback.push(mapping, changes);
+            }
+
+            // Create PR
+            progress.report({ message: 'Creating pull request...' });
+            await this.prCreator.createPr(mapping, pushResult.branch, changes);
+          }
         },
       );
     } finally {

@@ -53,11 +53,22 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   const pushCommand = vscode.commands.registerCommand('github-sync.push', async () => {
-    vscode.window.showInformationMessage('GitHub Sync: Push not yet implemented');
+    if (!syncEngine) {
+      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      return;
+    }
+    await syncEngine.pushAll();
   });
 
   const pushSelectCommand = vscode.commands.registerCommand('github-sync.pushSelect', async () => {
-    vscode.window.showInformationMessage('GitHub Sync: Push (Select) not yet implemented');
+    if (!syncEngine) {
+      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      return;
+    }
+    const selected = await pickMappings(configManager.mappings, 'push');
+    if (selected) {
+      await syncEngine.pushMappings(selected);
+    }
   });
 
   context.subscriptions.push(
