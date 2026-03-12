@@ -1,0 +1,91 @@
+{
+  "name": "github-sync",
+  "displayName": "GitHub Sync",
+  "description": "Bidirectional sync between GitHub repos and local directories",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:github-sync.pull",
+    "onCommand:github-sync.push",
+    "onCommand:github-sync.pullSelect",
+    "onCommand:github-sync.pushSelect",
+    "onCommand:github-sync.initConfig"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "github-sync.pull",
+        "title": "GitHub Sync: Pull"
+      },
+      {
+        "command": "github-sync.push",
+        "title": "GitHub Sync: Push"
+      },
+      {
+        "command": "github-sync.pullSelect",
+        "title": "GitHub Sync: Pull (Select Mapping)"
+      },
+      {
+        "command": "github-sync.pushSelect",
+        "title": "GitHub Sync: Push (Select Mapping)"
+      },
+      {
+        "command": "github-sync.initConfig",
+        "title": "GitHub Sync: Init Config"
+      }
+    ],
+    "configuration": {
+      "title": "GitHub Sync",
+      "properties": {
+        "github-sync.logLevel": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info",
+          "description": "Log level for GitHub Sync output"
+        }
+      }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": ".github-sync.json",
+        "url": "./schemas/github-sync.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext .ts",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.0",
+    "simple-git": "^3.27.0",
+    "minimatch": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "@types/mocha": "^10.0.0",
+    "@vscode/test-electron": "^2.4.0",
+    "typescript": "^5.5.0",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "prettier": "^3.0.0",
+    "@types/minimatch": "^5.1.0"
+  }
+}

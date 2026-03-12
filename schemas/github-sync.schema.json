@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitHub Sync Configuration",
+  "description": "Configuration for bidirectional sync between GitHub repos and local directories",
+  "type": "object",
+  "required": ["mappings"],
+  "properties": {
+    "mappings": {
+      "type": "array",
+      "description": "List of sync mappings",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "repo", "sourcePath", "destPath"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name for this mapping"
+          },
+          "repo": {
+            "type": "string",
+            "description": "GitHub repository in owner/repo format",
+            "pattern": "^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch to sync from (default: repo default branch)",
+            "default": "main"
+          },
+          "sourcePath": {
+            "type": "string",
+            "description": "Path within the GitHub repo to sync from"
+          },
+          "destPath": {
+            "type": "string",
+            "description": "Local destination path (relative to workspace root or absolute)"
+          },
+          "include": {
+            "type": "array",
+            "description": "Glob patterns to include (default: all files)",
+            "items": { "type": "string" }
+          },
+          "exclude": {
+            "type": "array",
+            "description": "Glob patterns to exclude",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
