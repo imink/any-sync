@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "files": {
+    "daily-work-skills::edge-add-histogram/SKILL.md": {
+      "remoteSha": "460632bda38e99de1e1c0331d5127455a4a5976c",
+      "localHash": "41e8f9a26dea3c6622b6d9cffb6fe26763a283e14209453bd21137cbd2c02583",
+      "syncedAt": "2026-03-12T08:05:04.801Z"
+    },
+    "daily-work-skills::edge-add-histogram/references/histogram-templates.md": {
+      "remoteSha": "b4a0339e666ed453bb7ebe80d5aea3e497c64d1b",
+      "localHash": "3e88eb391eff01d91047bc14b1c8a1a56da7cb91c50e2b90abb31282eade1055",
+      "syncedAt": "2026-03-12T08:05:04.802Z"
+    },
+    "daily-work-skills::edge-cherry-pick/SKILL.md": {
+      "remoteSha": "6ac927788ba5ca5879e129ec8ff7679f0acba754",
+      "localHash": "62808a22a6f13b23f4490fa18d7df33df941dfdce4287a08adc6912e9131c4ed",
+      "syncedAt": "2026-03-12T08:05:04.803Z"
+    },
+    "daily-work-skills::edge-cherry-pick/references/official-pr-template.md": {
+      "remoteSha": "582fc473bbfdfe422bbf6f734223fc2ccf069b1d",
+      "localHash": "b7b0a7b2ab6ad02e23663d337535bd1bbbb08927bea55afd2495fb3b92d40c27",
+      "syncedAt": "2026-03-12T08:05:04.804Z"
+    }
+  },
+  "lastSync": {
+    "daily-work-skills": "2026-03-12T08:05:04.804Z"
+  }
+}

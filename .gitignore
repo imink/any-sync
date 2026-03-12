@@ -3,3 +3,6 @@ node_modules/
 .vscode-test/
 *.vsix
 .worktrees/
+.claude/
+.claude/settings.local.json
+.github-sync.json
