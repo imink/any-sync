@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 export type SyncState = 'idle' | 'syncing' | 'error' | 'success';
 
 /**
- * Manages the status bar item for GitHub Sync.
+ * Manages the status bar item for Any Sync.
  */
 export class StatusBar implements vscode.Disposable {
   private statusBarItem: vscode.StatusBarItem;
@@ -14,7 +14,7 @@ export class StatusBar implements vscode.Disposable {
       vscode.StatusBarAlignment.Left,
       100,
     );
-    this.statusBarItem.command = 'github-sync.showOutput';
+    this.statusBarItem.command = 'any-sync.showOutput';
     this.setState('idle');
     this.statusBarItem.show();
   }
@@ -30,28 +30,28 @@ export class StatusBar implements vscode.Disposable {
 
     switch (state) {
       case 'idle':
-        this.statusBarItem.text = '$(cloud) GitHub Sync';
-        this.statusBarItem.tooltip = 'GitHub Sync: Ready';
+        this.statusBarItem.text = '$(cloud) Any Sync';
+        this.statusBarItem.tooltip = 'Any Sync: Ready';
         this.statusBarItem.backgroundColor = undefined;
         break;
 
       case 'syncing':
-        this.statusBarItem.text = '$(sync~spin) GitHub Sync';
-        this.statusBarItem.tooltip = `GitHub Sync: ${message || 'Syncing...'}`;
+        this.statusBarItem.text = '$(sync~spin) Any Sync';
+        this.statusBarItem.tooltip = `Any Sync: ${message || 'Syncing...'}`;
         this.statusBarItem.backgroundColor = undefined;
         break;
 
       case 'success':
-        this.statusBarItem.text = '$(check) GitHub Sync';
-        this.statusBarItem.tooltip = `GitHub Sync: ${message || 'Sync complete'}`;
+        this.statusBarItem.text = '$(check) Any Sync';
+        this.statusBarItem.tooltip = `Any Sync: ${message || 'Sync complete'}`;
         this.statusBarItem.backgroundColor = undefined;
         // Auto-reset to idle after 5 seconds
         this.resetTimer = setTimeout(() => this.setState('idle'), 5000);
         break;
 
       case 'error':
-        this.statusBarItem.text = '$(error) GitHub Sync';
-        this.statusBarItem.tooltip = `GitHub Sync: ${message || 'Error'}`;
+        this.statusBarItem.text = '$(error) Any Sync';
+        this.statusBarItem.tooltip = `Any Sync: ${message || 'Error'}`;
         this.statusBarItem.backgroundColor = new vscode.ThemeColor(
           'statusBarItem.errorBackground',
         );

@@ -14,7 +14,7 @@ export async function pickMappings(
 ): Promise<SyncMapping[] | undefined> {
   if (mappings.length === 0) {
     vscode.window.showWarningMessage(
-      'GitHub Sync: No mappings configured. Run "GitHub Sync: Init Config" to create a config file.',
+      'Any Sync: No mappings configured. Run "Any Sync: Init Config" to create a config file.',
     );
     return undefined;
   }
@@ -31,7 +31,7 @@ export async function pickMappings(
   }));
 
   const picked = await vscode.window.showQuickPick(items, {
-    title: `GitHub Sync: Select mappings to ${action}`,
+    title: `Any Sync: Select mappings to ${action}`,
     placeHolder: `Choose which mappings to ${action}`,
     canPickMany: true,
     ignoreFocusOut: true,

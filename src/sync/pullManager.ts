@@ -68,7 +68,7 @@ export class PullManager {
 
       // Step 2: Get tree (directory listing)
       this.outputChannel.appendLine(
-        `GitHub Sync: Fetching tree for ${owner}/${repo}/${branch}:${mapping.sourcePath}`,
+        `Any Sync: Fetching tree for ${owner}/${repo}/${branch}:${mapping.sourcePath}`,
       );
       const tree = await this.githubClient.getTree(owner, repo, branch, mapping.sourcePath);
 
@@ -79,7 +79,7 @@ export class PullManager {
       const filteredEntries = this.filterEntries(blobEntries, mapping.include, mapping.exclude);
 
       this.outputChannel.appendLine(
-        `GitHub Sync: Found ${filteredEntries.length} files (${blobEntries.length} total, after filtering)`,
+        `Any Sync: Found ${filteredEntries.length} files (${blobEntries.length} total, after filtering)`,
       );
 
       if (filteredEntries.length === 0) {
@@ -209,7 +209,7 @@ export class PullManager {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       errors.push(errMsg);
-      this.outputChannel.appendLine(`GitHub Sync: Pull failed for ${mapping.name}: ${errMsg}`);
+      this.outputChannel.appendLine(`Any Sync: Pull failed for ${mapping.name}: ${errMsg}`);
       return { mapping, files, errors };
     }
   }
@@ -251,7 +251,7 @@ export class PullManager {
     // Write to a temp file in the same directory (for atomic rename)
     const tempPath = path.join(
       dir,
-      `.github-sync-tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      `.any-sync-tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
 
     try {

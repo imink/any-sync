@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as crypto from 'crypto';
 
-const LOCKFILE_NAME = '.github-sync.lock';
+const LOCKFILE_NAME = '.any-sync.lock';
 
 /**
  * A lockfile entry representing a previously-synced file.
@@ -36,7 +36,7 @@ export function hashContent(content: Buffer): string {
 }
 
 /**
- * Manages the .github-sync.lock file for tracking sync state.
+ * Manages the .any-sync.lock file for tracking sync state.
  */
 export class Lockfile {
   private data: LockfileData;

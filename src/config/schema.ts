@@ -1,5 +1,5 @@
 /**
- * TypeScript types and validation for .github-sync.json configuration.
+ * TypeScript types and validation for .any-sync.json configuration.
  */
 
 export interface SyncMapping {

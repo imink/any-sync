@@ -9,7 +9,7 @@ suite('Lockfile', () => {
   let lockfile: Lockfile;
 
   setup(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'github-sync-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'any-sync-test-'));
     lockfile = new Lockfile(tmpDir);
   });
 

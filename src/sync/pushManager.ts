@@ -47,7 +47,7 @@ export class PushManager {
     try {
       const git = simpleGit();
       const version = await git.version();
-      this.outputChannel.appendLine(`GitHub Sync: Git available: ${version.installed ? version.major + '.' + version.minor + '.' + version.patch : 'not installed'}`);
+      this.outputChannel.appendLine(`Any Sync: Git available: ${version.installed ? version.major + '.' + version.minor + '.' + version.patch : 'not installed'}`);
       return version.installed;
     } catch {
       return false;
@@ -82,7 +82,7 @@ export class PushManager {
         // File was deleted — could be treated as a deletion push
         // For now, skip deleted files
         this.outputChannel.appendLine(
-          `GitHub Sync: Skipping deleted file: ${relativePath}`,
+          `Any Sync: Skipping deleted file: ${relativePath}`,
         );
       }
     }
@@ -174,13 +174,13 @@ export class PushManager {
   ): Promise<PushResult> {
     const [owner, repo] = mapping.repo.split('/');
     const branch = mapping.branch || 'main';
-    const pushBranch = `github-sync/${Date.now()}`;
-    const tmpDir = path.join(os.tmpdir(), `github-sync-push-${Date.now()}`);
+    const pushBranch = `any-sync/${Date.now()}`;
+    const tmpDir = path.join(os.tmpdir(), `any-sync-push-${Date.now()}`);
 
     try {
       await fs.mkdir(tmpDir, { recursive: true });
 
-      this.outputChannel.appendLine(`GitHub Sync: Cloning ${owner}/${repo} (sparse) to ${tmpDir}...`);
+      this.outputChannel.appendLine(`Any Sync: Cloning ${owner}/${repo} (sparse) to ${tmpDir}...`);
 
       // Sparse clone
       const git = simpleGit(tmpDir);
@@ -215,7 +215,7 @@ export class PushManager {
       await cloneGit.commit(commitMessage);
       await cloneGit.push('origin', pushBranch);
 
-      this.outputChannel.appendLine(`GitHub Sync: Pushed ${files.length} files to branch ${pushBranch}`);
+      this.outputChannel.appendLine(`Any Sync: Pushed ${files.length} files to branch ${pushBranch}`);
 
       return {
         mapping,
@@ -227,10 +227,10 @@ export class PushManager {
       // Always clean up temp directory
       try {
         await fs.rm(tmpDir, { recursive: true, force: true });
-        this.outputChannel.appendLine('GitHub Sync: Cleaned up temp directory');
+        this.outputChannel.appendLine('Any Sync: Cleaned up temp directory');
       } catch (cleanupErr) {
         this.outputChannel.appendLine(
-          `GitHub Sync: Warning — failed to clean up temp dir: ${cleanupErr}`,
+          `Any Sync: Warning — failed to clean up temp dir: ${cleanupErr}`,
         );
       }
     }

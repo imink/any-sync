@@ -29,7 +29,7 @@ export class ConflictResolver implements vscode.Disposable {
   constructor() {
     this.remoteContentProvider = new RemoteContentProvider();
     this.providerRegistration = vscode.workspace.registerTextDocumentContentProvider(
-      'github-sync-remote',
+      'any-sync-remote',
       this.remoteContentProvider,
     );
   }

@@ -49,7 +49,7 @@ export class SyncEngine implements vscode.Disposable {
     const mappings = this.configManager.mappings;
     if (mappings.length === 0) {
       vscode.window.showWarningMessage(
-        'GitHub Sync: No mappings configured. Run "GitHub Sync: Init Config" to set up.',
+        'Any Sync: No mappings configured. Run "Any Sync: Init Config" to set up.',
       );
       return;
     }
@@ -61,7 +61,7 @@ export class SyncEngine implements vscode.Disposable {
    */
   async pullMappings(mappings: SyncMapping[]): Promise<void> {
     if (this.isSyncing) {
-      vscode.window.showWarningMessage('GitHub Sync: A sync operation is already in progress.');
+      vscode.window.showWarningMessage('Any Sync: A sync operation is already in progress.');
       return;
     }
 
@@ -78,7 +78,7 @@ export class SyncEngine implements vscode.Disposable {
       await this.lockfile.load();
 
       await ProgressReporter.withProgress(
-        'GitHub Sync: Pulling...',
+        'Any Sync: Pulling...',
         async (progress, cancellationToken) => {
           const allResults: PullResult[] = [];
 
@@ -146,7 +146,7 @@ export class SyncEngine implements vscode.Disposable {
     const mappings = this.configManager.mappings;
     if (mappings.length === 0) {
       vscode.window.showWarningMessage(
-        'GitHub Sync: No mappings configured. Run "GitHub Sync: Init Config" to set up.',
+        'Any Sync: No mappings configured. Run "Any Sync: Init Config" to set up.',
       );
       return;
     }
@@ -158,7 +158,7 @@ export class SyncEngine implements vscode.Disposable {
    */
   async pushMappings(mappings: SyncMapping[]): Promise<void> {
     if (this.isSyncing) {
-      vscode.window.showWarningMessage('GitHub Sync: A sync operation is already in progress.');
+      vscode.window.showWarningMessage('Any Sync: A sync operation is already in progress.');
       return;
     }
 
@@ -173,7 +173,7 @@ export class SyncEngine implements vscode.Disposable {
       await this.lockfile.load();
 
       await ProgressReporter.withProgress(
-        'GitHub Sync: Pushing...',
+        'Any Sync: Pushing...',
         async (progress, cancellationToken) => {
           for (let i = 0; i < mappings.length; i++) {
             if (cancellationToken.isCancellationRequested) {
@@ -190,7 +190,7 @@ export class SyncEngine implements vscode.Disposable {
 
             if (changes.length === 0) {
               vscode.window.showInformationMessage(
-                `GitHub Sync: No local changes to push for "${mapping.name}".`,
+                `Any Sync: No local changes to push for "${mapping.name}".`,
               );
               continue;
             }
@@ -198,7 +198,7 @@ export class SyncEngine implements vscode.Disposable {
             // Show confirmation dialog
             const fileList = changes.map((f) => f.relativePath).join(', ');
             const confirm = await vscode.window.showWarningMessage(
-              `GitHub Sync: Push ${changes.length} changed file(s) for "${mapping.name}"?\n\nFiles: ${fileList}`,
+              `Any Sync: Push ${changes.length} changed file(s) for "${mapping.name}"?\n\nFiles: ${fileList}`,
               { modal: true },
               'Push & Create PR',
               'Cancel',
@@ -216,8 +216,8 @@ export class SyncEngine implements vscode.Disposable {
 
             if (gitAvailable) {
               const commitMessage = changes.length === 1
-                ? `sync: Update ${changes[0].relativePath} via GitHub Sync`
-                : `sync: Update ${changes.length} files in ${mapping.sourcePath} via GitHub Sync`;
+                ? `sync: Update ${changes[0].relativePath} via Any Sync`
+                : `sync: Update ${changes.length} files in ${mapping.sourcePath} via Any Sync`;
 
               pushResult = await this.pushManager.pushViaGit(
                 mapping,
@@ -276,14 +276,14 @@ export class SyncEngine implements vscode.Disposable {
     if (errorCount > 0) {parts.push(`${errorCount} errors`);}
 
     if (parts.length === 0) {
-      vscode.window.showInformationMessage('GitHub Sync: Everything up to date.');
+      vscode.window.showInformationMessage('Any Sync: Everything up to date.');
     } else if (errorCount > 0) {
-      vscode.window.showWarningMessage(`GitHub Sync: Pull completed with issues: ${parts.join(', ')}`);
+      vscode.window.showWarningMessage(`Any Sync: Pull completed with issues: ${parts.join(', ')}`);
     } else {
-      vscode.window.showInformationMessage(`GitHub Sync: Pull complete — ${parts.join(', ')}`);
+      vscode.window.showInformationMessage(`Any Sync: Pull complete — ${parts.join(', ')}`);
     }
 
-    this.outputChannel.appendLine(`GitHub Sync: Pull summary — ${parts.join(', ') || 'no changes'}`);
+    this.outputChannel.appendLine(`Any Sync: Pull summary — ${parts.join(', ') || 'no changes'}`);
   }
 
   /**

@@ -23,7 +23,7 @@ suite('PushManager - Change Detection', () => {
   let pushManager: PushManager;
 
   setup(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'github-sync-push-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'any-sync-push-test-'));
     lockfile = new Lockfile(tmpDir);
     pushManager = new PushManager(lockfile, mockOutputChannel);
   });

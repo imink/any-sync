@@ -56,7 +56,7 @@ export class GitHubClient implements vscode.Disposable {
 
     this._octokit = new Octokit({
       auth: token,
-      userAgent: 'github-sync-vscode',
+      userAgent: 'any-sync-vscode',
       log: {
         debug: (msg: string) => this.outputChannel.appendLine(`[Octokit DEBUG] ${msg}`),
         info: (msg: string) => this.outputChannel.appendLine(`[Octokit INFO] ${msg}`),
@@ -85,13 +85,13 @@ export class GitHubClient implements vscode.Disposable {
 
       if (remaining < 100) {
         this.outputChannel.appendLine(
-          `GitHub Sync: Rate limit warning - ${remaining}/${limit} remaining, resets at ${this._rateLimitInfo.resetAt.toLocaleTimeString()}`,
+          `Any Sync: Rate limit warning - ${remaining}/${limit} remaining, resets at ${this._rateLimitInfo.resetAt.toLocaleTimeString()}`,
         );
       }
 
       if (remaining < 10) {
         vscode.window.showWarningMessage(
-          `GitHub Sync: API rate limit nearly exhausted (${remaining} remaining). Resets at ${this._rateLimitInfo.resetAt.toLocaleTimeString()}.`,
+          `Any Sync: API rate limit nearly exhausted (${remaining} remaining). Resets at ${this._rateLimitInfo.resetAt.toLocaleTimeString()}.`,
         );
       }
     }
@@ -163,7 +163,7 @@ export class GitHubClient implements vscode.Disposable {
 
     if (treeResponse.data.truncated) {
       this.outputChannel.appendLine(
-        'GitHub Sync: Warning - tree response was truncated. Very large repositories may have incomplete listings.',
+        'Any Sync: Warning - tree response was truncated. Very large repositories may have incomplete listings.',
       );
     }
 
@@ -233,7 +233,7 @@ export class GitHubClient implements vscode.Disposable {
           results.set(item.path, content);
         } catch (err) {
           this.outputChannel.appendLine(
-            `GitHub Sync: Failed to download ${item.path}: ${err instanceof Error ? err.message : String(err)}`,
+            `Any Sync: Failed to download ${item.path}: ${err instanceof Error ? err.message : String(err)}`,
           );
           throw err;
         }

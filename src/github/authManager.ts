@@ -37,14 +37,14 @@ export class AuthManager implements vscode.Disposable {
 
       if (session) {
         this._token = session.accessToken;
-        this.outputChannel.appendLine('GitHub Sync: Authenticated via VSCode GitHub session');
+        this.outputChannel.appendLine('Any Sync: Authenticated via VSCode GitHub session');
         this.listenForSessionChanges();
         return this._token;
       }
     } catch (err) {
       // User cancelled the auth prompt, or auth provider unavailable
       this.outputChannel.appendLine(
-        `GitHub Sync: VSCode auth unavailable or cancelled: ${err instanceof Error ? err.message : String(err)}`,
+        `Any Sync: VSCode auth unavailable or cancelled: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
 
@@ -52,11 +52,11 @@ export class AuthManager implements vscode.Disposable {
     const envToken = process.env.GITHUB_TOKEN;
     if (envToken) {
       this._token = envToken;
-      this.outputChannel.appendLine('GitHub Sync: Authenticated via GITHUB_TOKEN environment variable');
+      this.outputChannel.appendLine('Any Sync: Authenticated via GITHUB_TOKEN environment variable');
       return this._token;
     }
 
-    this.outputChannel.appendLine('GitHub Sync: No authentication available');
+    this.outputChannel.appendLine('Any Sync: No authentication available');
     this._token = null;
     return null;
   }
@@ -71,7 +71,7 @@ export class AuthManager implements vscode.Disposable {
     const token = await this.getToken(true);
     if (!token) {
       const action = await vscode.window.showErrorMessage(
-        'GitHub Sync: Authentication required. Sign in to GitHub or set GITHUB_TOKEN environment variable.',
+        'Any Sync: Authentication required. Sign in to GitHub or set GITHUB_TOKEN environment variable.',
         'Sign In',
         'Cancel',
       );
@@ -109,7 +109,7 @@ export class AuthManager implements vscode.Disposable {
     this._sessionChangeSubscription = vscode.authentication.onDidChangeSessions(
       async (e) => {
         if (e.provider.id === 'github') {
-          this.outputChannel.appendLine('GitHub Sync: GitHub auth session changed, refreshing token');
+          this.outputChannel.appendLine('Any Sync: GitHub auth session changed, refreshing token');
           const oldToken = this._token;
           await this.getToken(false); // Silent refresh, don't prompt
           if (this._token !== oldToken) {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { SyncConfig, SyncMapping, ValidationError, validateConfig } from './schema';
 
-const CONFIG_FILENAME = '.github-sync.json';
+const CONFIG_FILENAME = '.any-sync.json';
 
 const DEFAULT_CONFIG: SyncConfig = {
   mappings: [
@@ -28,7 +28,7 @@ export class ConfigManager implements vscode.Disposable {
   public readonly onDidChangeConfig = this._onDidChangeConfig.event;
 
   constructor() {
-    this._diagnosticCollection = vscode.languages.createDiagnosticCollection('github-sync');
+    this._diagnosticCollection = vscode.languages.createDiagnosticCollection('any-sync');
   }
 
   /**
@@ -155,13 +155,13 @@ export class ConfigManager implements vscode.Disposable {
   }
 
   /**
-   * Scaffold a starter .github-sync.json in the workspace root.
+   * Scaffold a starter .any-sync.json in the workspace root.
    */
   async initConfig(): Promise<void> {
     const configUri = this.getConfigUri();
     if (!configUri) {
       vscode.window.showErrorMessage(
-        'GitHub Sync: No workspace folder open. Please open a folder first.',
+        'Any Sync: No workspace folder open. Please open a folder first.',
       );
       return;
     }
@@ -192,7 +192,7 @@ export class ConfigManager implements vscode.Disposable {
     await vscode.window.showTextDocument(doc);
 
     vscode.window.showInformationMessage(
-      `GitHub Sync: Created ${CONFIG_FILENAME}. Edit the mappings to configure your sync.`,
+      `Any Sync: Created ${CONFIG_FILENAME}. Edit the mappings to configure your sync.`,
     );
   }
 

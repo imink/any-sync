@@ -81,7 +81,7 @@ export async function withRetry<T>(
 
       const errMsg = error instanceof Error ? error.message : String(error);
       outputChannel?.appendLine(
-        `GitHub Sync: Request failed (attempt ${attempt + 1}/${maxRetries + 1}): ${errMsg}. Retrying in ${delay}ms...`,
+        `Any Sync: Request failed (attempt ${attempt + 1}/${maxRetries + 1}): ${errMsg}. Retrying in ${delay}ms...`,
       );
 
       // Wait with jitter

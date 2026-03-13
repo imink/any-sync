@@ -1,4 +1,4 @@
-# GitHub Sync
+# Any Sync
 
 Bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back via pull requests.
 
@@ -16,23 +16,23 @@ Bidirectional sync between GitHub repositories and local directories. Pull files
 
 1. Install the extension
 2. Open a workspace folder
-3. Run **"GitHub Sync: Init Config"** from the Command Palette (`Cmd+Shift+P`)
-4. Edit `.github-sync.json` to configure your sync mappings
-5. Run **"GitHub Sync: Pull"** to sync files
+3. Run **"Any Sync: Init Config"** from the Command Palette (`Cmd+Shift+P`)
+4. Edit `.any-sync.json` to configure your sync mappings
+5. Run **"Any Sync: Pull"** to sync files
 
 ## Configuration
 
-Create a `.github-sync.json` file in your workspace root:
+Create a `.any-sync.json` file in your workspace root:
 
 ```json
 {
   "mappings": [
     {
-      "name": "My Claude Skills",
-      "repo": "username/my-skills-repo",
+      "name": "My Skills",
+      "repo": "username/my-repo",
       "branch": "main",
-      "sourcePath": "skills",
-      "destPath": ".claude/skills",
+      "sourcePath": "src",
+      "destPath": "local/dest",
       "include": ["**/*.md"],
       "exclude": ["**/drafts/**"]
     }
@@ -56,19 +56,19 @@ Create a `.github-sync.json` file in your workspace root:
 
 | Command | Description |
 |---------|-------------|
-| `GitHub Sync: Pull` | Pull all configured mappings |
-| `GitHub Sync: Pull (Select Mapping)` | Choose which mappings to pull |
-| `GitHub Sync: Push` | Push local changes for all mappings |
-| `GitHub Sync: Push (Select Mapping)` | Choose which mappings to push |
-| `GitHub Sync: Init Config` | Create a starter `.github-sync.json` |
-| `GitHub Sync: Show Output` | Open the extension's output channel |
+| `Any Sync: Pull` | Pull all configured mappings |
+| `Any Sync: Pull (Select Mapping)` | Choose which mappings to pull |
+| `Any Sync: Push` | Push local changes for all mappings |
+| `Any Sync: Push (Select Mapping)` | Choose which mappings to push |
+| `Any Sync: Init Config` | Create a starter `.any-sync.json` |
+| `Any Sync: Show Output` | Open the extension's output channel |
 
 ## How it works
 
 ### Pull
-1. Reads your `.github-sync.json` configuration
+1. Reads your `.any-sync.json` configuration
 2. Fetches the directory tree from GitHub via REST API
-3. Compares remote file SHAs against the local lockfile (`.github-sync.lock`)
+3. Compares remote file SHAs against the local lockfile (`.any-sync.lock`)
 4. Downloads only changed files, writing them atomically
 5. If both local and remote have changed, shows a conflict resolution dialog
 
@@ -88,7 +88,7 @@ Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scena
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `github-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
+| `any-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
 
 ## Requirements
 

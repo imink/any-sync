@@ -41,7 +41,7 @@ export class PrCreator {
     const body = this.generateBody(mapping, files);
 
     this.outputChannel.appendLine(
-      `GitHub Sync: Creating PR on ${owner}/${repo}: "${title}" (${pushBranch} → ${baseBranch})`,
+      `Any Sync: Creating PR on ${owner}/${repo}: "${title}" (${pushBranch} → ${baseBranch})`,
     );
 
     const result = await this.githubClient.createPullRequest(
@@ -54,12 +54,12 @@ export class PrCreator {
     );
 
     this.outputChannel.appendLine(
-      `GitHub Sync: PR #${result.number} created: ${result.html_url}`,
+      `Any Sync: PR #${result.number} created: ${result.html_url}`,
     );
 
     // Show notification with clickable link
     const action = await vscode.window.showInformationMessage(
-      `GitHub Sync: PR #${result.number} created on ${owner}/${repo}`,
+      `Any Sync: PR #${result.number} created on ${owner}/${repo}`,
       'Open PR',
     );
 
@@ -79,9 +79,9 @@ export class PrCreator {
    */
   private generateTitle(mapping: SyncMapping, files: PushableFile[]): string {
     if (files.length === 1) {
-      return `sync: Update ${files[0].relativePath} via GitHub Sync`;
+      return `sync: Update ${files[0].relativePath} via Any Sync`;
     }
-    return `sync: Update ${files.length} files in ${mapping.sourcePath} via GitHub Sync`;
+    return `sync: Update ${files.length} files in ${mapping.sourcePath} via Any Sync`;
   }
 
   /**
@@ -89,7 +89,7 @@ export class PrCreator {
    */
   generateBody(mapping: SyncMapping, files: PushableFile[]): string {
     const lines: string[] = [
-      '## GitHub Sync — Automated PR',
+      '## Any Sync — Automated PR',
       '',
       `**Mapping:** ${mapping.name}`,
       `**Source path:** \`${mapping.sourcePath}\``,
@@ -106,7 +106,7 @@ export class PrCreator {
     lines.push('');
     lines.push('---');
     lines.push(
-      '*This PR was created automatically by the [GitHub Sync](https://marketplace.visualstudio.com/items?itemName=github-sync) VSCode extension.*',
+      '*This PR was created automatically by the [Any Sync](https://marketplace.visualstudio.com/items?itemName=any-sync) VSCode extension.*',
     );
 
     return lines.join('\n');

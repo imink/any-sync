@@ -28,11 +28,11 @@ export class RestPushFallback {
   ): Promise<PushResult> {
     const [owner, repo] = mapping.repo.split('/');
     const baseBranch = mapping.branch || 'main';
-    const pushBranch = `github-sync/${Date.now()}`;
+    const pushBranch = `any-sync/${Date.now()}`;
     const normalizedSourcePath = mapping.sourcePath.replace(/^\/+|\/+$/g, '');
 
     this.outputChannel.appendLine(
-      `GitHub Sync: Pushing ${files.length} files via REST API to ${owner}/${repo}...`,
+      `Any Sync: Pushing ${files.length} files via REST API to ${owner}/${repo}...`,
     );
 
     // 1. Get the latest commit SHA on the base branch
@@ -70,7 +70,7 @@ export class RestPushFallback {
         sha: blobSha,
       });
 
-      this.outputChannel.appendLine(`GitHub Sync: Created blob for ${filePath}`);
+      this.outputChannel.appendLine(`Any Sync: Created blob for ${filePath}`);
     }
 
     // 3. Create a new tree based on the latest commit's tree
@@ -83,8 +83,8 @@ export class RestPushFallback {
 
     // 4. Create a new commit
     const commitMessage = files.length === 1
-      ? `sync: Update ${files[0].relativePath} via GitHub Sync`
-      : `sync: Update ${files.length} files in ${mapping.sourcePath} via GitHub Sync`;
+      ? `sync: Update ${files[0].relativePath} via Any Sync`
+      : `sync: Update ${files.length} files in ${mapping.sourcePath} via Any Sync`;
 
     const newCommitSha = await this.githubClient.createCommit(
       owner,
@@ -103,7 +103,7 @@ export class RestPushFallback {
     );
 
     this.outputChannel.appendLine(
-      `GitHub Sync: Pushed ${files.length} files to branch ${pushBranch} via REST API`,
+      `Any Sync: Pushed ${files.length} files to branch ${pushBranch} via REST API`,
     );
 
     return {

@@ -9,8 +9,8 @@ import { StatusBar } from './ui/statusBar';
 let syncEngine: SyncEngine | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-  const outputChannel = vscode.window.createOutputChannel('GitHub Sync');
-  outputChannel.appendLine('GitHub Sync extension activating...');
+  const outputChannel = vscode.window.createOutputChannel('Any Sync');
+  outputChannel.appendLine('Any Sync extension activating...');
 
   const statusBar = new StatusBar(outputChannel);
 
@@ -21,32 +21,32 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Initialize config
   configManager.initialize().catch((err) => {
-    outputChannel.appendLine(`GitHub Sync: Config initialization error: ${err}`);
+    outputChannel.appendLine(`Any Sync: Config initialization error: ${err}`);
   });
 
   // Create sync engine (only if workspace is open)
   try {
     syncEngine = new SyncEngine(configManager, authManager, githubClient, outputChannel);
   } catch (err) {
-    outputChannel.appendLine(`GitHub Sync: Could not create SyncEngine: ${err}`);
+    outputChannel.appendLine(`Any Sync: Could not create SyncEngine: ${err}`);
   }
 
   // Register commands
-  const initConfigCommand = vscode.commands.registerCommand('github-sync.initConfig', async () => {
+  const initConfigCommand = vscode.commands.registerCommand('any-sync.initConfig', async () => {
     await configManager.initConfig();
   });
 
-  const pullCommand = vscode.commands.registerCommand('github-sync.pull', async () => {
+  const pullCommand = vscode.commands.registerCommand('any-sync.pull', async () => {
     if (!syncEngine) {
-      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
       return;
     }
     await syncEngine.pullAll();
   });
 
-  const pullSelectCommand = vscode.commands.registerCommand('github-sync.pullSelect', async () => {
+  const pullSelectCommand = vscode.commands.registerCommand('any-sync.pullSelect', async () => {
     if (!syncEngine) {
-      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
       return;
     }
     const selected = await pickMappings(configManager.mappings, 'pull');
@@ -55,17 +55,17 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const pushCommand = vscode.commands.registerCommand('github-sync.push', async () => {
+  const pushCommand = vscode.commands.registerCommand('any-sync.push', async () => {
     if (!syncEngine) {
-      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
       return;
     }
     await syncEngine.pushAll();
   });
 
-  const pushSelectCommand = vscode.commands.registerCommand('github-sync.pushSelect', async () => {
+  const pushSelectCommand = vscode.commands.registerCommand('any-sync.pushSelect', async () => {
     if (!syncEngine) {
-      vscode.window.showErrorMessage('GitHub Sync: No workspace folder open.');
+      vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
       return;
     }
     const selected = await pickMappings(configManager.mappings, 'push');
@@ -74,7 +74,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const showOutputCommand = vscode.commands.registerCommand('github-sync.showOutput', () => {
+  const showOutputCommand = vscode.commands.registerCommand('any-sync.showOutput', () => {
     outputChannel.show();
   });
 
@@ -96,7 +96,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(syncEngine);
   }
 
-  outputChannel.appendLine('GitHub Sync extension activated');
+  outputChannel.appendLine('Any Sync extension activated');
 }
 
 export function deactivate(): void {

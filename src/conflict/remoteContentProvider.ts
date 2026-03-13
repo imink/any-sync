@@ -3,13 +3,13 @@ import * as vscode from 'vscode';
 /**
  * URI scheme for remote content in diff views.
  */
-export const REMOTE_CONTENT_SCHEME = 'github-sync-remote';
+export const REMOTE_CONTENT_SCHEME = 'any-sync-remote';
 
 /**
  * Provides remote file content for VSCode's diff editor.
  *
  * Files are registered with a URI like:
- *   github-sync-remote:/<mapping-name>/<relative-path>
+ *   any-sync-remote:/<mapping-name>/<relative-path>
  *
  * The content is stored in-memory and can be set before opening a diff.
  */

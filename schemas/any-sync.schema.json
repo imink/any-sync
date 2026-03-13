@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "GitHub Sync Configuration",
+  "title": "Any Sync Configuration",
   "description": "Configuration for bidirectional sync between GitHub repos and local directories",
   "type": "object",
   "required": ["mappings"],
