@@ -2,7 +2,7 @@
   "name": "any-sync",
   "displayName": "Any Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "publisher": "patrickw1029",
   "repository": {
     "type": "git",
@@ -80,7 +80,8 @@
     "test": "node ./out/test/runTest.js",
     "lint": "eslint src --ext .ts",
     "vscode:prepublish": "node esbuild.js --production",
-    "package": "npm run vscode:prepublish && vsce package"
+    "package": "npm run vscode:prepublish && npx @vscode/vsce package",
+    "publish": "npm run package && npx @vscode/vsce publish"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.0",

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';
+import { minimatch } from 'minimatch';
 import { simpleGit, SimpleGit } from 'simple-git';
 import { SyncMapping } from '../config/schema';
 import { Lockfile, hashContent } from './lockfile';
@@ -90,7 +91,33 @@ export class PushManager {
     // Also check for new files in destRoot that aren't in the lockfile
     await this.findNewFiles(mapping, destRoot, entries, changes);
 
-    return changes;
+    // Apply include/exclude glob filters
+    return this.filterFiles(changes, mapping.include, mapping.exclude);
+  }
+
+  /**
+   * Filter pushable files by include/exclude glob patterns.
+   */
+  private filterFiles(
+    files: PushableFile[],
+    include?: string[],
+    exclude?: string[],
+  ): PushableFile[] {
+    let result = files;
+
+    if (include && include.length > 0) {
+      result = result.filter((file) =>
+        include.some((pattern) => minimatch(file.relativePath, pattern, { dot: true })),
+      );
+    }
+
+    if (exclude && exclude.length > 0) {
+      result = result.filter(
+        (file) => !exclude.some((pattern) => minimatch(file.relativePath, pattern, { dot: true })),
+      );
+    }
+
+    return result;
   }
 
   /**

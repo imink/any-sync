@@ -131,4 +131,87 @@ suite('PushManager - Change Detection', () => {
 
     assert.strictEqual(changes.length, 0);
   });
+
+  test('should apply include filter to detected changes', async () => {
+    const original = Buffer.from('original');
+    lockfile.setEntry('mapping1', 'doc.md', 'sha1', original);
+    lockfile.setEntry('mapping1', 'code.ts', 'sha2', original);
+
+    const destRoot = path.join(tmpDir, 'dest');
+    await fs.mkdir(destRoot, { recursive: true });
+    await fs.writeFile(path.join(destRoot, 'doc.md'), 'modified');
+    await fs.writeFile(path.join(destRoot, 'code.ts'), 'modified');
+
+    const changes = await pushManager.detectChanges(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'src', destPath: 'dest', include: ['**/*.md'] },
+      destRoot,
+    );
+
+    assert.strictEqual(changes.length, 1);
+    assert.strictEqual(changes[0].relativePath, 'doc.md');
+  });
+
+  test('should apply exclude filter to detected changes', async () => {
+    const original = Buffer.from('original');
+    lockfile.setEntry('mapping1', 'keep.md', 'sha1', original);
+    lockfile.setEntry('mapping1', 'drafts/wip.md', 'sha2', original);
+
+    const destRoot = path.join(tmpDir, 'dest');
+    await fs.mkdir(path.join(destRoot, 'drafts'), { recursive: true });
+    await fs.writeFile(path.join(destRoot, 'keep.md'), 'modified');
+    await fs.writeFile(path.join(destRoot, 'drafts', 'wip.md'), 'modified');
+
+    const changes = await pushManager.detectChanges(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'src', destPath: 'dest', exclude: ['drafts/**'] },
+      destRoot,
+    );
+
+    assert.strictEqual(changes.length, 1);
+    assert.strictEqual(changes[0].relativePath, 'keep.md');
+  });
+
+  test('should apply include filter to new (untracked) files', async () => {
+    const destRoot = path.join(tmpDir, 'dest');
+    await fs.mkdir(destRoot, { recursive: true });
+    await fs.writeFile(path.join(destRoot, 'readme.md'), 'new');
+    await fs.writeFile(path.join(destRoot, 'script.sh'), 'new');
+
+    const changes = await pushManager.detectChanges(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'src', destPath: 'dest', include: ['**/*.md'] },
+      destRoot,
+    );
+
+    assert.strictEqual(changes.length, 1);
+    assert.strictEqual(changes[0].relativePath, 'readme.md');
+  });
+
+  test('should apply exclude filter to new (untracked) files', async () => {
+    const destRoot = path.join(tmpDir, 'dest');
+    await fs.mkdir(path.join(destRoot, 'tmp'), { recursive: true });
+    await fs.writeFile(path.join(destRoot, 'good.md'), 'new');
+    await fs.writeFile(path.join(destRoot, 'tmp', 'scratch.md'), 'new');
+
+    const changes = await pushManager.detectChanges(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'src', destPath: 'dest', exclude: ['tmp/**'] },
+      destRoot,
+    );
+
+    assert.strictEqual(changes.length, 1);
+    assert.strictEqual(changes[0].relativePath, 'good.md');
+  });
+
+  test('should include all files when no include/exclude specified', async () => {
+    const destRoot = path.join(tmpDir, 'dest');
+    await fs.mkdir(destRoot, { recursive: true });
+    await fs.writeFile(path.join(destRoot, 'a.md'), 'new');
+    await fs.writeFile(path.join(destRoot, 'b.ts'), 'new');
+    await fs.writeFile(path.join(destRoot, 'c.txt'), 'new');
+
+    const changes = await pushManager.detectChanges(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'src', destPath: 'dest' },
+      destRoot,
+    );
+
+    assert.strictEqual(changes.length, 3);
+  });
 });

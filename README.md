@@ -90,6 +90,55 @@ Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scena
 |---------|---------|-------------|
 | `any-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
 
+## Publishing to VS Code Marketplace
+
+### Prerequisites
+
+1. Create a publisher account on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage) if you don't have one.
+2. Generate a Personal Access Token (PAT) from [Azure DevOps](https://dev.azure.com) with the **Marketplace > Manage** scope.
+
+### Steps
+
+1. **Login** to your publisher account:
+   ```bash
+   npx @vscode/vsce login patrickw1029
+   ```
+   You will be prompted to enter your PAT.
+
+2. **Package** the extension into a `.vsix` file:
+   ```bash
+   npx @vscode/vsce package
+   ```
+   This builds and produces a file like `any-sync-0.1.0.vsix`.
+
+3. **Publish** the extension:
+   ```bash
+   npx @vscode/vsce publish
+   ```
+   This packages and uploads the extension to the Marketplace in one step.
+
+   To publish a specific version bump:
+   ```bash
+   npx @vscode/vsce publish minor   # 0.1.0 → 0.2.0
+   npx @vscode/vsce publish patch   # 0.1.0 → 0.1.1
+   ```
+
+4. **Verify** the extension is live on the [Marketplace](https://marketplace.visualstudio.com/).
+
+### Publishing a Pre-packaged VSIX
+
+If you already have a `.vsix` file:
+```bash
+npx @vscode/vsce publish --packagePath any-sync-0.1.0.vsix
+```
+
+### Unpublish
+
+To remove the extension from the Marketplace:
+```bash
+npx @vscode/vsce unpublish patrickw1029.any-sync
+```
+
 ## Requirements
 
 - VSCode 1.85.0 or later
