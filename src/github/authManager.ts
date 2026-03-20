@@ -128,6 +128,53 @@ export class AuthManager implements vscode.Disposable {
     this._onDidChangeToken.fire(null);
   }
 
+  /**
+   * Clear auth cache and session preference so the next sign-in can pick another account.
+   */
+  async resetAuthStatus(): Promise<void> {
+    this.clearToken();
+
+    try {
+      await vscode.authentication.getSession('github', ['repo'], {
+        createIfNone: false,
+        silent: true,
+        clearSessionPreference: true,
+      });
+      this.outputChannel.appendLine('Any Sync: Cleared GitHub session preference');
+    } catch (err) {
+      this.outputChannel.appendLine(
+        `Any Sync: Could not clear GitHub session preference: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  /**
+   * Prompt VS Code auth flow to use a different GitHub account.
+   */
+  async signInWithDifferentAccount(): Promise<string | null> {
+    try {
+      const session = await vscode.authentication.getSession('github', ['repo'], {
+        createIfNone: true,
+        forceNewSession: true,
+      });
+
+      if (!session) {
+        return null;
+      }
+
+      this._token = session.accessToken;
+      this.listenForSessionChanges();
+      this._onDidChangeToken.fire(this._token);
+      this.outputChannel.appendLine('Any Sync: Signed in with a new GitHub session');
+      return this._token;
+    } catch (err) {
+      this.outputChannel.appendLine(
+        `Any Sync: Sign-in with another account cancelled or failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
+    }
+  }
+
   dispose(): void {
     this._sessionChangeSubscription?.dispose();
     this._onDidChangeToken.dispose();

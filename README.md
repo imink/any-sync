@@ -61,6 +61,7 @@ Create a `.any-sync.json` file in your workspace root:
 | `Any Sync: Push` | Push local changes for all mappings |
 | `Any Sync: Push (Select Mapping)` | Choose which mappings to push |
 | `Any Sync: Init Config` | Create a starter `.any-sync.json` |
+| `Any Sync: Reset Config & Auth` | Remove `.any-sync.json` and clear Any Sync GitHub auth preference |
 | `Any Sync: Show Output` | Open the extension's output channel |
 
 ## How it works

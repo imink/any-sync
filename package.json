@@ -19,7 +19,8 @@
     "onCommand:any-sync.push",
     "onCommand:any-sync.pullSelect",
     "onCommand:any-sync.pushSelect",
-    "onCommand:any-sync.initConfig"
+    "onCommand:any-sync.initConfig",
+    "onCommand:any-sync.resetConfigAndAuth"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -43,6 +44,10 @@
       {
         "command": "any-sync.initConfig",
         "title": "Any Sync: Init Config"
+      },
+      {
+        "command": "any-sync.resetConfigAndAuth",
+        "title": "Any Sync: Reset Config & Auth"
       },
       {
         "command": "any-sync.showOutput",

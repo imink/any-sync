@@ -36,6 +36,44 @@ export function activate(context: vscode.ExtensionContext): void {
     await configManager.initConfig();
   });
 
+  const resetConfigAndAuthCommand = vscode.commands.registerCommand(
+    'any-sync.resetConfigAndAuth',
+    async () => {
+      const confirmation = await vscode.window.showWarningMessage(
+        'Any Sync: Reset local config and GitHub auth status? This removes .any-sync.json in the current workspace and clears Any Sync auth preference.',
+        { modal: true },
+        'Reset',
+      );
+
+      if (confirmation !== 'Reset') {
+        return;
+      }
+
+      try {
+        await configManager.resetConfig();
+        await authManager.resetAuthStatus();
+
+        outputChannel.appendLine('Any Sync: Reset config and auth status complete');
+
+        const nextAction = await vscode.window.showInformationMessage(
+          'Any Sync: Reset complete. You can sign in with another GitHub account and create a new config.',
+          'Sign In with Another Account',
+          'Init Config',
+        );
+
+        if (nextAction === 'Sign In with Another Account') {
+          await authManager.signInWithDifferentAccount();
+        } else if (nextAction === 'Init Config') {
+          await configManager.initConfig();
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        outputChannel.appendLine(`Any Sync: Reset failed: ${message}`);
+        vscode.window.showErrorMessage(`Any Sync: Failed to reset state: ${message}`);
+      }
+    },
+  );
+
   const pullCommand = vscode.commands.registerCommand('any-sync.pull', async () => {
     if (!syncEngine) {
       vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
@@ -85,6 +123,7 @@ export function activate(context: vscode.ExtensionContext): void {
     authManager,
     githubClient,
     initConfigCommand,
+    resetConfigAndAuthCommand,
     pullCommand,
     pullSelectCommand,
     pushCommand,

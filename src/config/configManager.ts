@@ -197,6 +197,33 @@ export class ConfigManager implements vscode.Disposable {
   }
 
   /**
+   * Remove .any-sync.json and clear loaded config state.
+   */
+  async resetConfig(): Promise<void> {
+    const configUri = this.getConfigUri();
+
+    if (!configUri) {
+      this._config = null;
+      this._diagnosticCollection.clear();
+      this._onDidChangeConfig.fire(null);
+      return;
+    }
+
+    try {
+      await vscode.workspace.fs.delete(configUri, { useTrash: false });
+    } catch (err) {
+      // Ignore if the config file does not exist.
+      if (!(err instanceof vscode.FileSystemError) || err.code !== 'FileNotFound') {
+        throw err;
+      }
+    }
+
+    this._config = null;
+    this._diagnosticCollection.clear();
+    this._onDidChangeConfig.fire(null);
+  }
+
+  /**
    * Resolve a destPath to an absolute path.
    * If the destPath is relative, resolve it relative to the workspace root.
    */
