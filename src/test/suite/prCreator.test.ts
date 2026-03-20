@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as vscode from 'vscode';
 import { PrCreator } from '../../sync/prCreator';
 import { PushableFile } from '../../sync/pushManager';
 
@@ -85,5 +86,53 @@ suite('PrCreator - Body Generation', () => {
 
     const body = prCreator.generateBody(mapping, files);
     assert.ok(body.includes('my/special/path'));
+  });
+
+  test('createPr should not block waiting for notification action', async () => {
+    const originalShowInformationMessage = (vscode.window as any).showInformationMessage;
+
+    let resolveNotification: ((value: string | undefined) => void) | undefined;
+    const pendingNotification = new Promise<string | undefined>((resolve) => {
+      resolveNotification = resolve;
+    });
+
+    (vscode.window as any).showInformationMessage = () => pendingNotification;
+
+    const githubClient = {
+      createPullRequest: async () => ({
+        number: 1,
+        html_url: 'https://github.com/o/r/pull/1',
+      }),
+    };
+
+    const creator = new PrCreator(githubClient as any, mockOutputChannel);
+    const mapping = {
+      name: 'My Skills',
+      repo: 'o/r',
+      sourcePath: 'skills',
+      destPath: '.claude/skills',
+    };
+    const files: PushableFile[] = [
+      { relativePath: 'file.md', localPath: '/tmp/file.md', content: Buffer.from('x') },
+    ];
+
+    try {
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('createPr timed out')), 250);
+      });
+
+      const result = await Promise.race([
+        creator.createPr(mapping, 'any-sync/test-branch', files),
+        timeout,
+      ]);
+
+      assert.strictEqual(result.number, 1);
+      assert.strictEqual(result.url, 'https://github.com/o/r/pull/1');
+    } finally {
+      if (resolveNotification) {
+        resolveNotification(undefined);
+      }
+      (vscode.window as any).showInformationMessage = originalShowInformationMessage;
+    }
   });
 });

@@ -57,15 +57,17 @@ export class PrCreator {
       `Any Sync: PR #${result.number} created: ${result.html_url}`,
     );
 
-    // Show notification with clickable link
-    const action = await vscode.window.showInformationMessage(
-      `Any Sync: PR #${result.number} created on ${owner}/${repo}`,
-      'Open PR',
-    );
-
-    if (action === 'Open PR') {
-      vscode.env.openExternal(vscode.Uri.parse(result.html_url));
-    }
+    // Show notification with clickable link without blocking push progress completion.
+    void vscode.window
+      .showInformationMessage(
+        `Any Sync: PR #${result.number} created on ${owner}/${repo}`,
+        'Open PR',
+      )
+      .then((action) => {
+        if (action === 'Open PR') {
+          void vscode.env.openExternal(vscode.Uri.parse(result.html_url));
+        }
+      });
 
     return {
       number: result.number,
