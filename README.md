@@ -54,6 +54,33 @@ Create a `.any-sync.json` file in your workspace root:
 | `include` | | Glob patterns to include (default: all files) |
 | `exclude` | | Glob patterns to exclude |
 
+### Path Tokens
+
+You can use path tokens in `destPath` for cross-device mappings:
+
+| Token | Resolves to |
+|-------|-------------|
+| `${copilotMemory}` | VS Code Copilot memory folder on the current OS |
+
+This token resolves to:
+- Windows: `C:\\Users\\<user>\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\memory-tool\\memories`
+- macOS: `~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/memory-tool/memories`
+- Linux: `~/.config/Code/User/globalStorage/github.copilot-chat/memory-tool/memories`
+
+Example mapping for cross-device Copilot memory sync:
+
+```json
+{
+  "name": "Copilot Memory",
+  "repo": "username/my-repo",
+  "branch": "main",
+  "sourcePath": "copilot-memory",
+  "destPath": "${copilotMemory}",
+  "include": ["**/*"],
+  "exclude": []
+}
+```
+
 ## Commands
 
 | Command | Description |

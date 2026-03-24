@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as os from 'os';
 import { SyncConfig, SyncMapping, ValidationError, validateConfig } from './schema';
 
 const CONFIG_FILENAME = '.any-sync.json';
@@ -13,6 +14,24 @@ const DEFAULT_CONFIG: SyncConfig = {
       sourcePath: 'skills',
       destPath: '.claude/skills',
       include: ['**/*.md'],
+      exclude: [],
+    },
+    {
+      name: 'Example: Claude Folder',
+      repo: 'owner/repo',
+      branch: 'main',
+      sourcePath: '.claude',
+      destPath: '.claude',
+      include: ['**/*'],
+      exclude: [],
+    },
+    {
+      name: 'Example: VS Code Copilot Memory',
+      repo: 'owner/repo',
+      branch: 'main',
+      sourcePath: 'copilot-memory',
+      destPath: '${copilotMemory}',
+      include: ['**/*'],
       exclude: [],
     },
   ],
@@ -226,16 +245,86 @@ export class ConfigManager implements vscode.Disposable {
   /**
    * Resolve a destPath to an absolute path.
    * If the destPath is relative, resolve it relative to the workspace root.
+   *
+   * Supported tokens:
+   * - ${copilotMemory}: VS Code Copilot memory folder (platform-specific)
    */
   resolveDestPath(mapping: SyncMapping): string {
-    if (path.isAbsolute(mapping.destPath)) {
-      return mapping.destPath;
+    const expandedDestPath = this.expandDestPath(mapping.destPath);
+
+    if (this.isAbsolutePath(expandedDestPath)) {
+      return expandedDestPath;
     }
+
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
       throw new Error('No workspace folder open');
     }
-    return path.join(workspaceRoot, mapping.destPath);
+    return path.join(workspaceRoot, expandedDestPath);
+  }
+
+  private isAbsolutePath(destPath: string): boolean {
+    // path.isAbsolute handles native absolute paths; regex handles Windows absolute paths on non-Windows hosts.
+    return path.isAbsolute(destPath) || /^[a-zA-Z]:[\\/]/.test(destPath) || /^\\\\/.test(destPath);
+  }
+
+  private expandDestPath(destPath: string): string {
+    return destPath.replace(/\$\{copilotMemory\}/g, this.getCopilotMemoryPath());
+  }
+
+  private getCopilotMemoryPath(): string {
+    if (process.platform === 'win32') {
+      const appData = process.env.APPDATA;
+      if (appData && appData.trim()) {
+        return path.join(
+          appData,
+          'Code',
+          'User',
+          'globalStorage',
+          'github.copilot-chat',
+          'memory-tool',
+          'memories',
+        );
+      }
+
+      // Fallback for unusual environments where APPDATA is missing.
+      return path.join(
+        os.homedir(),
+        'AppData',
+        'Roaming',
+        'Code',
+        'User',
+        'globalStorage',
+        'github.copilot-chat',
+        'memory-tool',
+        'memories',
+      );
+    }
+
+    if (process.platform === 'darwin') {
+      return path.join(
+        os.homedir(),
+        'Library',
+        'Application Support',
+        'Code',
+        'User',
+        'globalStorage',
+        'github.copilot-chat',
+        'memory-tool',
+        'memories',
+      );
+    }
+
+    return path.join(
+      os.homedir(),
+      '.config',
+      'Code',
+      'User',
+      'globalStorage',
+      'github.copilot-chat',
+      'memory-tool',
+      'memories',
+    );
   }
 
   dispose(): void {

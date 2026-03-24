@@ -11,7 +11,10 @@ export interface SyncMapping {
   branch?: string;
   /** Path within the GitHub repo to sync from */
   sourcePath: string;
-  /** Local destination path (relative to workspace root or absolute) */
+  /**
+   * Local destination path (relative to workspace root or absolute).
+   * Supports ${copilotMemory} token for cross-platform VS Code Copilot memory location.
+   */
   destPath: string;
   /** Glob patterns to include (default: all files) */
   include?: string[];
