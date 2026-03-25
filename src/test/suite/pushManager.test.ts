@@ -214,4 +214,31 @@ suite('PushManager - Change Detection', () => {
 
     assert.strictEqual(changes.length, 3);
   });
+
+  test('should prefer explicit repoPath when provided', () => {
+    const repoPath = pushManager.toRepoRelativePath(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'src', destPath: 'dest' },
+      {
+        relativePath: '.any-sync.json',
+        repoPath: '.any-sync.json',
+        localPath: '/tmp/.any-sync.json',
+        content: Buffer.from('{}'),
+      },
+    );
+
+    assert.strictEqual(repoPath, '.any-sync.json');
+  });
+
+  test('should resolve mapping-relative path when repoPath is missing', () => {
+    const repoPath = pushManager.toRepoRelativePath(
+      { name: 'mapping1', repo: 'o/r', sourcePath: 'skills', destPath: 'dest' },
+      {
+        relativePath: 'a.md',
+        localPath: '/tmp/a.md',
+        content: Buffer.from('x'),
+      },
+    );
+
+    assert.strictEqual(repoPath, 'skills/a.md');
+  });
 });

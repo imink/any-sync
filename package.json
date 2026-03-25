@@ -2,7 +2,7 @@
   "name": "any-sync",
   "displayName": "Any Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "patrickw1029",
   "repository": {
     "type": "git",
@@ -19,8 +19,9 @@
     "onCommand:any-sync.push",
     "onCommand:any-sync.pullSelect",
     "onCommand:any-sync.pushSelect",
-    "onCommand:any-sync.initConfig",
-    "onCommand:any-sync.resetConfigAndAuth"
+    "onCommand:any-sync.editConfig",
+    "onCommand:any-sync.resetConfigAndAuth",
+    "onCommand:any-sync.showOutput"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -42,8 +43,8 @@
         "title": "Any Sync: Push (Select Mapping)"
       },
       {
-        "command": "any-sync.initConfig",
-        "title": "Any Sync: Init Config"
+        "command": "any-sync.editConfig",
+        "title": "Any Sync: Edit Config"
       },
       {
         "command": "any-sync.resetConfigAndAuth",
@@ -86,7 +87,7 @@
     "lint": "eslint src --ext .ts",
     "vscode:prepublish": "node esbuild.js --production",
     "package": "npm run vscode:prepublish && npx @vscode/vsce package",
-    "publish": "npm run package && npx @vscode/vsce publish"
+    "publish": "npm run package && npx @vscode/vsce publish patch"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.0",

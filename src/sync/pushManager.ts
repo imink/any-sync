@@ -13,6 +13,8 @@ import { Lockfile, hashContent } from './lockfile';
 export interface PushableFile {
   /** Relative path within the mapping */
   relativePath: string;
+  /** Optional repository-relative path override */
+  repoPath?: string;
   /** Absolute local file path */
   localPath: string;
   /** Current local content */
@@ -224,13 +226,30 @@ export class PushManager {
       // Re-initialize simple-git for the cloned repo
       const cloneGit = simpleGit(tmpDir);
 
-      // Set sparse-checkout to include only the source path
+      // Set sparse-checkout paths for all files to push.
       const normalizedSourcePath = mapping.sourcePath.replace(/^\/+|\/+$/g, '');
-      await cloneGit.raw(['sparse-checkout', 'set', normalizedSourcePath]);
+      const sparsePaths = new Set<string>();
+
+      if (normalizedSourcePath) {
+        sparsePaths.add(normalizedSourcePath);
+      }
+
+      for (const file of files) {
+        const repoPath = this.toRepoRelativePath(mapping, file);
+        const topSegment = repoPath.split('/')[0];
+        if (topSegment) {
+          sparsePaths.add(topSegment);
+        }
+      }
+
+      if (sparsePaths.size > 0) {
+        await cloneGit.raw(['sparse-checkout', 'set', ...Array.from(sparsePaths)]);
+      }
 
       // Copy changed files into the sparse checkout
       for (const file of files) {
-        const destPath = path.join(tmpDir, normalizedSourcePath, file.relativePath);
+        const repoPath = this.toRepoRelativePath(mapping, file);
+        const destPath = path.join(tmpDir, ...repoPath.split('/'));
         const destDir = path.dirname(destPath);
         await fs.mkdir(destDir, { recursive: true });
         await fs.writeFile(destPath, file.content);
@@ -261,5 +280,18 @@ export class PushManager {
         );
       }
     }
+  }
+
+  toRepoRelativePath(mapping: SyncMapping, file: PushableFile): string {
+    if (file.repoPath && file.repoPath.trim()) {
+      return file.repoPath.replace(/^\/+|\/+$/g, '');
+    }
+
+    const normalizedSourcePath = mapping.sourcePath.replace(/^\/+|\/+$/g, '');
+    if (!normalizedSourcePath) {
+      return file.relativePath;
+    }
+
+    return `${normalizedSourcePath}/${file.relativePath}`;
   }
 }

@@ -29,7 +29,6 @@ export class RestPushFallback {
     const [owner, repo] = mapping.repo.split('/');
     const baseBranch = mapping.branch || 'main';
     const pushBranch = `any-sync/${Date.now()}`;
-    const normalizedSourcePath = mapping.sourcePath.replace(/^\/+|\/+$/g, '');
 
     this.outputChannel.appendLine(
       `Any Sync: Pushing ${files.length} files via REST API to ${owner}/${repo}...`,
@@ -59,9 +58,14 @@ export class RestPushFallback {
         'base64',
       );
 
-      const filePath = normalizedSourcePath
-        ? `${normalizedSourcePath}/${file.relativePath}`
-        : file.relativePath;
+      const filePath = file.repoPath && file.repoPath.trim()
+        ? file.repoPath.replace(/^\/+|\/+$/g, '')
+        : (() => {
+          const normalizedSourcePath = mapping.sourcePath.replace(/^\/+|\/+$/g, '');
+          return normalizedSourcePath
+            ? `${normalizedSourcePath}/${file.relativePath}`
+            : file.relativePath;
+        })();
 
       treeEntries.push({
         path: filePath,

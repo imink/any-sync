@@ -387,6 +387,44 @@ export class GitHubClient implements vscode.Disposable {
     return response.data.sha;
   }
 
+  /**
+   * Fetch a file by path from a branch. Returns null when file does not exist.
+   */
+  async getFileContent(
+    owner: string,
+    repo: string,
+    filePath: string,
+    branch: string,
+  ): Promise<Buffer | null> {
+    const octokit = await this.getOctokit();
+
+    try {
+      const response = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: filePath,
+        ref: branch,
+      });
+      this.updateRateLimit(response.headers as Record<string, string | number | undefined>);
+
+      if (Array.isArray(response.data)) {
+        return null;
+      }
+
+      if (response.data.type !== 'file') {
+        return null;
+      }
+
+      return Buffer.from(response.data.content, 'base64');
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 404) {
+        return null;
+      }
+      throw err;
+    }
+  }
+
   dispose(): void {
     this._authSubscription.dispose();
     this._octokit = null;

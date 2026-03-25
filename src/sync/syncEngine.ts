@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ConfigManager } from '../config/configManager';
+import { ConfigManager, CONFIG_FILENAME } from '../config/configManager';
 import { AuthManager } from '../github/authManager';
 import { GitHubClient } from '../github/githubClient';
 import { PullManager, PullFileResult, PullResult } from './pullManager';
@@ -9,7 +9,7 @@ import { RestPushFallback } from './restPushFallback';
 import { Lockfile } from './lockfile';
 import { ConflictResolver } from '../conflict/conflictResolver';
 import { ProgressReporter } from '../ui/progressReporter';
-import { SyncMapping } from '../config/schema';
+import { SyncMapping, validateConfig } from '../config/schema';
 
 /**
  * Orchestrates pull and push sync operations.
@@ -49,17 +49,17 @@ export class SyncEngine implements vscode.Disposable {
     const mappings = this.configManager.mappings;
     if (mappings.length === 0) {
       vscode.window.showWarningMessage(
-        'Any Sync: No mappings configured. Run "Any Sync: Init Config" to set up.',
+        'Any Sync: No mappings configured. Run "Any Sync: Edit Config" to set up.',
       );
       return;
     }
-    await this.pullMappings(mappings);
+    await this.pullMappings(mappings, true);
   }
 
   /**
    * Pull selected mappings.
    */
-  async pullMappings(mappings: SyncMapping[]): Promise<void> {
+  async pullMappings(mappings: SyncMapping[], refreshMappingsFromConfig = false): Promise<void> {
     if (this.isSyncing) {
       vscode.window.showWarningMessage('Any Sync: A sync operation is already in progress.');
       return;
@@ -74,6 +74,11 @@ export class SyncEngine implements vscode.Disposable {
         return;
       }
 
+      const didApplyRemoteConfig = await this.applyRemoteConfigAsDefault(mappings);
+      const mappingsToPull = refreshMappingsFromConfig && didApplyRemoteConfig && this.configManager.mappings.length > 0
+        ? this.configManager.mappings
+        : mappings;
+
       // Load lockfile
       await this.lockfile.load();
 
@@ -82,14 +87,14 @@ export class SyncEngine implements vscode.Disposable {
         async (progress, cancellationToken) => {
           const allResults: PullResult[] = [];
 
-          for (let i = 0; i < mappings.length; i++) {
+          for (let i = 0; i < mappingsToPull.length; i++) {
             if (cancellationToken.isCancellationRequested) {
               break;
             }
 
-            const mapping = mappings[i];
+            const mapping = mappingsToPull[i];
             progress.report({
-              message: `[${i + 1}/${mappings.length}] ${mapping.name}`,
+              message: `[${i + 1}/${mappingsToPull.length}] ${mapping.name}`,
               increment: 0,
             });
 
@@ -146,7 +151,7 @@ export class SyncEngine implements vscode.Disposable {
     const mappings = this.configManager.mappings;
     if (mappings.length === 0) {
       vscode.window.showWarningMessage(
-        'Any Sync: No mappings configured. Run "Any Sync: Init Config" to set up.',
+        'Any Sync: No mappings configured. Run "Any Sync: Edit Config" to set up.',
       );
       return;
     }
@@ -186,7 +191,11 @@ export class SyncEngine implements vscode.Disposable {
             });
 
             const destRoot = this.configManager.resolveDestPath(mapping);
-            const changes = await this.pushManager.detectChanges(mapping, destRoot);
+            const mappingChanges = await this.pushManager.detectChanges(mapping, destRoot);
+            const configChange = await this.buildConfigPushFile(mapping);
+            const changes = configChange
+              ? [...mappingChanges, configChange]
+              : mappingChanges;
 
             if (changes.length === 0) {
               vscode.window.showInformationMessage(
@@ -196,7 +205,7 @@ export class SyncEngine implements vscode.Disposable {
             }
 
             // Show confirmation dialog
-            const fileList = changes.map((f) => f.relativePath).join(', ');
+            const fileList = changes.map((f) => f.repoPath ?? f.relativePath).join(', ');
             const confirm = await vscode.window.showWarningMessage(
               `Any Sync: Push ${changes.length} changed file(s) for "${mapping.name}"?\n\nFiles: ${fileList}`,
               { modal: true },
@@ -302,5 +311,83 @@ export class SyncEngine implements vscode.Disposable {
 
   dispose(): void {
     this.conflictResolver.dispose();
+  }
+
+  private async buildConfigPushFile(mapping: SyncMapping): Promise<PushableFile | null> {
+    const localConfig = await this.configManager.readConfigFileRaw();
+    if (!localConfig) {
+      return null;
+    }
+
+    const [owner, repo] = mapping.repo.split('/');
+    const branch = mapping.branch || (await this.githubClient.getDefaultBranch(owner, repo));
+    const remoteConfig = await this.githubClient.getFileContent(
+      owner,
+      repo,
+      CONFIG_FILENAME,
+      branch,
+    );
+
+    if (remoteConfig && Buffer.compare(localConfig, remoteConfig) === 0) {
+      return null;
+    }
+
+    return {
+      relativePath: CONFIG_FILENAME,
+      repoPath: CONFIG_FILENAME,
+      localPath: CONFIG_FILENAME,
+      content: localConfig,
+    };
+  }
+
+  private async applyRemoteConfigAsDefault(mappings: SyncMapping[]): Promise<boolean> {
+    const localConfig = await this.configManager.readConfigFileRaw();
+
+    for (const mapping of mappings) {
+      const [owner, repo] = mapping.repo.split('/');
+      const branch = mapping.branch || (await this.githubClient.getDefaultBranch(owner, repo));
+
+      const remoteConfig = await this.githubClient.getFileContent(
+        owner,
+        repo,
+        CONFIG_FILENAME,
+        branch,
+      );
+
+      if (!remoteConfig) {
+        continue;
+      }
+
+      try {
+        const parsed = JSON.parse(remoteConfig.toString('utf8'));
+        if (!parsed || typeof parsed !== 'object') {
+          continue;
+        }
+
+        if (validateConfig(parsed).length > 0) {
+          this.outputChannel.appendLine(
+            `Any Sync: Skipping remote ${CONFIG_FILENAME} from ${owner}/${repo} because it failed schema validation`,
+          );
+          continue;
+        }
+      } catch {
+        this.outputChannel.appendLine(
+          `Any Sync: Skipping remote ${CONFIG_FILENAME} from ${owner}/${repo} because it is invalid JSON`,
+        );
+        continue;
+      }
+
+      if (!localConfig || Buffer.compare(localConfig, remoteConfig) !== 0) {
+        await this.configManager.writeConfigFileRaw(remoteConfig);
+        this.outputChannel.appendLine(
+          `Any Sync: Updated local ${CONFIG_FILENAME} from ${owner}/${repo}@${branch}`,
+        );
+        return true;
+      }
+
+      return false;
+    }
+
+    return false;
   }
 }

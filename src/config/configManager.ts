@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { createHash } from 'crypto';
 import { SyncConfig, SyncMapping, ValidationError, validateConfig } from './schema';
 
-const CONFIG_FILENAME = '.any-sync.json';
+export const CONFIG_FILENAME = '.any-sync.json';
 
 const DEFAULT_CONFIG: SyncConfig = {
   mappings: [
@@ -40,13 +42,13 @@ const DEFAULT_CONFIG: SyncConfig = {
 export class ConfigManager implements vscode.Disposable {
   private _config: SyncConfig | null = null;
   private _diagnosticCollection: vscode.DiagnosticCollection;
-  private _watcher: vscode.FileSystemWatcher | null = null;
+  private _watchFilePath: string | null = null;
   private _onDidChangeConfig = new vscode.EventEmitter<SyncConfig | null>();
 
   /** Fires when the config file changes (or is deleted). Payload is the new config or null. */
   public readonly onDidChangeConfig = this._onDidChangeConfig.event;
 
-  constructor() {
+  constructor(private readonly extensionContext: vscode.ExtensionContext) {
     this._diagnosticCollection = vscode.languages.createDiagnosticCollection('any-sync');
   }
 
@@ -54,6 +56,7 @@ export class ConfigManager implements vscode.Disposable {
    * Initialize the config manager: read config, set up watcher.
    */
   async initialize(): Promise<void> {
+    await this.migrateLegacyConfigIfNeeded();
     await this.loadConfig();
     this.setupWatcher();
   }
@@ -74,13 +77,33 @@ export class ConfigManager implements vscode.Disposable {
 
   /**
    * Get the config file URI for the current workspace.
+   * Local config is stored in extension global storage so Git never tracks it.
    */
   private getConfigUri(): vscode.Uri | null {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders || workspaceFolders.length === 0) {
+    const workspaceFolder = this.getPrimaryWorkspaceFolder();
+    if (!workspaceFolder) {
       return null;
     }
-    return vscode.Uri.joinPath(workspaceFolders[0].uri, CONFIG_FILENAME);
+
+    const workspaceKey = this.getWorkspaceStorageKey(workspaceFolder.uri);
+    return vscode.Uri.joinPath(
+      this.extensionContext.globalStorageUri,
+      'workspaces',
+      workspaceKey,
+      CONFIG_FILENAME,
+    );
+  }
+
+  /**
+   * Legacy config location in workspace root.
+   */
+  private getLegacyConfigUri(): vscode.Uri | null {
+    const workspaceFolder = this.getPrimaryWorkspaceFolder();
+    if (!workspaceFolder) {
+      return null;
+    }
+
+    return vscode.Uri.joinPath(workspaceFolder.uri, CONFIG_FILENAME);
   }
 
   /**
@@ -132,6 +155,37 @@ export class ConfigManager implements vscode.Disposable {
   }
 
   /**
+  * Read raw config file bytes from local storage.
+   */
+  async readConfigFileRaw(): Promise<Buffer | null> {
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      return null;
+    }
+
+    try {
+      const raw = await vscode.workspace.fs.readFile(configUri);
+      return Buffer.from(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Write raw config bytes to local storage and refresh parsed config.
+   */
+  async writeConfigFileRaw(content: Buffer): Promise<void> {
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      throw new Error('No workspace folder open');
+    }
+
+    await this.ensureConfigDirectory(configUri);
+    await vscode.workspace.fs.writeFile(configUri, content);
+    await this.loadConfig();
+  }
+
+  /**
    * Update editor diagnostics (red squiggles) based on validation errors.
    */
   private updateDiagnostics(
@@ -157,24 +211,27 @@ export class ConfigManager implements vscode.Disposable {
   }
 
   /**
-   * Set up a FileSystemWatcher to detect config changes.
+   * Set up a file watcher to detect config changes.
    */
   private setupWatcher(): void {
-    this._watcher = vscode.workspace.createFileSystemWatcher(
-      `**/${CONFIG_FILENAME}`,
-    );
+    if (this._watchFilePath) {
+      fs.unwatchFile(this._watchFilePath);
+      this._watchFilePath = null;
+    }
 
-    this._watcher.onDidChange(() => this.loadConfig());
-    this._watcher.onDidCreate(() => this.loadConfig());
-    this._watcher.onDidDelete(() => {
-      this._config = null;
-      this._diagnosticCollection.clear();
-      this._onDidChangeConfig.fire(null);
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      return;
+    }
+
+    this._watchFilePath = configUri.fsPath;
+    fs.watchFile(this._watchFilePath, { persistent: false, interval: 1000 }, () => {
+      void this.loadConfig();
     });
   }
 
   /**
-   * Scaffold a starter .any-sync.json in the workspace root.
+   * Scaffold a starter config in local extension storage.
    */
   async initConfig(): Promise<void> {
     const configUri = this.getConfigUri();
@@ -184,6 +241,8 @@ export class ConfigManager implements vscode.Disposable {
       );
       return;
     }
+
+    await this.ensureConfigDirectory(configUri);
 
     // Check if file already exists
     try {
@@ -206,17 +265,66 @@ export class ConfigManager implements vscode.Disposable {
       Buffer.from(content, 'utf8'),
     );
 
+    await this.loadConfig();
+
     // Open the file in the editor
     const doc = await vscode.workspace.openTextDocument(configUri);
     await vscode.window.showTextDocument(doc);
 
     vscode.window.showInformationMessage(
-      `Any Sync: Created ${CONFIG_FILENAME}. Edit the mappings to configure your sync.`,
+      `Any Sync: Created ${CONFIG_FILENAME} in VS Code storage. Edit mappings to configure sync.`,
     );
   }
 
   /**
-   * Remove .any-sync.json and clear loaded config state.
+   * Open the current workspace config file (creating a starter file if needed).
+   */
+  async openConfig(): Promise<void> {
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      vscode.window.showErrorMessage(
+        'Any Sync: No workspace folder open. Please open a folder first.',
+      );
+      return;
+    }
+
+    const exists = await this.fileExists(configUri);
+    if (!exists) {
+      await this.ensureConfigDirectory(configUri);
+      const content = JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n';
+      await vscode.workspace.fs.writeFile(configUri, Buffer.from(content, 'utf8'));
+      await this.loadConfig();
+    }
+
+    const doc = await vscode.workspace.openTextDocument(configUri);
+    await vscode.window.showTextDocument(doc);
+  }
+
+  /**
+   * Reveal the current workspace config file in OS file explorer.
+   */
+  async revealConfig(): Promise<void> {
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      vscode.window.showErrorMessage(
+        'Any Sync: No workspace folder open. Please open a folder first.',
+      );
+      return;
+    }
+
+    const exists = await this.fileExists(configUri);
+    if (!exists) {
+      vscode.window.showInformationMessage(
+        `Any Sync: Config does not exist yet. Run "Any Sync: Edit Config" first.`,
+      );
+      return;
+    }
+
+    await vscode.commands.executeCommand('revealFileInOS', configUri);
+  }
+
+  /**
+   * Remove local config file and clear loaded config state.
    */
   async resetConfig(): Promise<void> {
     const configUri = this.getConfigUri();
@@ -240,6 +348,68 @@ export class ConfigManager implements vscode.Disposable {
     this._config = null;
     this._diagnosticCollection.clear();
     this._onDidChangeConfig.fire(null);
+  }
+
+  /**
+   * Migrate legacy workspace-root config into extension storage if needed.
+   */
+  private async migrateLegacyConfigIfNeeded(): Promise<void> {
+    const configUri = this.getConfigUri();
+    const legacyUri = this.getLegacyConfigUri();
+
+    if (!configUri || !legacyUri) {
+      return;
+    }
+
+    const newConfigExists = await this.fileExists(configUri);
+    const legacyConfigExists = await this.fileExists(legacyUri);
+
+    if (!newConfigExists && legacyConfigExists) {
+      const legacyRaw = await vscode.workspace.fs.readFile(legacyUri);
+      await this.ensureConfigDirectory(configUri);
+      await vscode.workspace.fs.writeFile(configUri, legacyRaw);
+
+      const deleteLegacy = await vscode.window.showInformationMessage(
+        `Any Sync: Migrated ${CONFIG_FILENAME} to VS Code storage so Git won't track it. Delete legacy workspace file?`,
+        'Delete Legacy File',
+        'Keep',
+      );
+
+      if (deleteLegacy === 'Delete Legacy File') {
+        try {
+          await vscode.workspace.fs.delete(legacyUri, { useTrash: true });
+        } catch {
+          // Best effort cleanup only.
+        }
+      }
+    }
+  }
+
+  private getPrimaryWorkspaceFolder(): vscode.WorkspaceFolder | null {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      return null;
+    }
+
+    return workspaceFolders[0];
+  }
+
+  private getWorkspaceStorageKey(workspaceUri: vscode.Uri): string {
+    return createHash('sha1').update(workspaceUri.toString()).digest('hex').slice(0, 16);
+  }
+
+  private async ensureConfigDirectory(configUri: vscode.Uri): Promise<void> {
+    const configDir = vscode.Uri.file(path.dirname(configUri.fsPath));
+    await vscode.workspace.fs.createDirectory(configDir);
+  }
+
+  private async fileExists(uri: vscode.Uri): Promise<boolean> {
+    try {
+      await vscode.workspace.fs.stat(uri);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -329,7 +499,10 @@ export class ConfigManager implements vscode.Disposable {
 
   dispose(): void {
     this._diagnosticCollection.dispose();
-    this._watcher?.dispose();
+    if (this._watchFilePath) {
+      fs.unwatchFile(this._watchFilePath);
+      this._watchFilePath = null;
+    }
     this._onDidChangeConfig.dispose();
   }
 }

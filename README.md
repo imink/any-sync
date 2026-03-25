@@ -18,13 +18,15 @@ Bidirectional sync between GitHub repositories and local directories. Pull files
 
 1. Install the extension
 2. Open a workspace folder
-3. Run **"Any Sync: Init Config"** from the Command Palette (`Cmd+Shift+P`)
-4. Edit `.any-sync.json` to configure your sync mappings
+3. Run **"Any Sync: Edit Config"** from the Command Palette (`Cmd+Shift+P`)
+4. Edit your mappings in `.any-sync.json`
 5. Run **"Any Sync: Pull"** to sync files
 
 ## Configuration
 
-Create a `.any-sync.json` file in your workspace root:
+Any Sync stores local `.any-sync.json` in VS Code extension storage (outside your repo) so Git will not track it. Use **"Any Sync: Edit Config"** to open it.
+
+Config format:
 
 ```json
 {
@@ -89,8 +91,8 @@ Example mapping for cross-device Copilot memory sync:
 | `Any Sync: Pull (Select Mapping)` | Choose which mappings to pull |
 | `Any Sync: Push` | Push local changes for all mappings |
 | `Any Sync: Push (Select Mapping)` | Choose which mappings to push |
-| `Any Sync: Init Config` | Create a starter `.any-sync.json` |
-| `Any Sync: Reset Config & Auth` | Remove `.any-sync.json` and clear Any Sync GitHub auth preference |
+| `Any Sync: Edit Config` | Open local `.any-sync.json` for the current workspace (creates starter config if missing) |
+| `Any Sync: Reset Config & Auth` | Remove local Any Sync config and clear Any Sync GitHub auth preference |
 | `Any Sync: Show Output` | Open the extension's output channel |
 
 ## How it works

@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const statusBar = new StatusBar(outputChannel);
 
   // Initialize core services
-  const configManager = new ConfigManager();
+  const configManager = new ConfigManager(context);
   const authManager = new AuthManager(outputChannel);
   const githubClient = new GitHubClient(authManager, outputChannel);
 
@@ -32,15 +32,15 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   // Register commands
-  const initConfigCommand = vscode.commands.registerCommand('any-sync.initConfig', async () => {
-    await configManager.initConfig();
+  const editConfigCommand = vscode.commands.registerCommand('any-sync.editConfig', async () => {
+    await configManager.openConfig();
   });
 
   const resetConfigAndAuthCommand = vscode.commands.registerCommand(
     'any-sync.resetConfigAndAuth',
     async () => {
       const confirmation = await vscode.window.showWarningMessage(
-        'Any Sync: Reset local config and GitHub auth status? This removes .any-sync.json in the current workspace and clears Any Sync auth preference.',
+        'Any Sync: Reset local config and GitHub auth status? This removes Any Sync local config from VS Code storage and clears Any Sync auth preference.',
         { modal: true },
         'Reset',
       );
@@ -58,13 +58,13 @@ export function activate(context: vscode.ExtensionContext): void {
         const nextAction = await vscode.window.showInformationMessage(
           'Any Sync: Reset complete. You can sign in with another GitHub account and create a new config.',
           'Sign In with Another Account',
-          'Init Config',
+          'Edit Config',
         );
 
         if (nextAction === 'Sign In with Another Account') {
           await authManager.signInWithDifferentAccount();
-        } else if (nextAction === 'Init Config') {
-          await configManager.initConfig();
+        } else if (nextAction === 'Edit Config') {
+          await configManager.openConfig();
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -122,7 +122,7 @@ export function activate(context: vscode.ExtensionContext): void {
     configManager,
     authManager,
     githubClient,
-    initConfigCommand,
+    editConfigCommand,
     resetConfigAndAuthCommand,
     pullCommand,
     pullSelectCommand,
