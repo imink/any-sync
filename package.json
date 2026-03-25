@@ -2,7 +2,7 @@
   "name": "any-sync",
   "displayName": "Any Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "patrickw1029",
   "repository": {
     "type": "git",
