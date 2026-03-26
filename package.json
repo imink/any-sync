@@ -2,6 +2,7 @@
   "name": "any-sync",
   "displayName": "Any Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
+  "icon": "assets/logo.png",
   "version": "0.1.7",
   "publisher": "patrickw1029",
   "repository": {
@@ -68,6 +69,11 @@
           ],
           "default": "info",
           "description": "Log level for Any Sync output"
+        },
+        "any-sync.syncRepoUrl": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub sync repository URL or owner/repo. Pull and push always use this value when set."
         }
       }
     },

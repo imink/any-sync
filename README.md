@@ -1,5 +1,7 @@
 # Any Sync
 
+![Any Sync Logo](assets/logo.png)
+
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/patrickw1029.any-sync?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync)
 
 Bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back via pull requests.
@@ -18,13 +20,20 @@ Bidirectional sync between GitHub repositories and local directories. Pull files
 
 1. Install the extension
 2. Open a workspace folder
-3. Run **"Any Sync: Edit Config"** from the Command Palette (`Cmd+Shift+P`)
+3. Run **"Any Sync: Init or Edit Config"** from the Command Palette (`Cmd+Shift+P`)
 4. Edit your mappings in `.any-sync.json`
 5. Run **"Any Sync: Pull"** to sync files
 
 ## Configuration
 
-Any Sync stores local `.any-sync.json` in VS Code extension storage (outside your repo) so Git will not track it. Use **"Any Sync: Edit Config"** to open it.
+Any Sync stores local `.any-sync.json` in VS Code extension storage (outside your repo) so Git will not track it. Use **"Any Sync: Init or Edit Config"** to open it.
+
+The repo used for sync can be controlled globally per workspace using the `any-sync.syncRepoUrl` setting. When this setting is provided, pull and push always use that repo value for all mappings.
+
+- Accepted setting formats:
+  - `owner/repo`
+  - `https://github.com/owner/repo` (also accepts `.git` suffix)
+- If you enter a repo in the first-run prompt, Any Sync saves it into this setting automatically.
 
 Config format:
 
@@ -91,7 +100,7 @@ Example mapping for cross-device Copilot memory sync:
 | `Any Sync: Pull (Select Mapping)` | Choose which mappings to pull |
 | `Any Sync: Push` | Push local changes for all mappings |
 | `Any Sync: Push (Select Mapping)` | Choose which mappings to push |
-| `Any Sync: Edit Config` | Open local `.any-sync.json` for the current workspace (creates starter config if missing) |
+| `Any Sync: Init or Edit Config` | Open local `.any-sync.json` for the current workspace (creates starter config if missing) |
 | `Any Sync: Reset Config & Auth` | Remove local Any Sync config and clear Any Sync GitHub auth preference |
 | `Any Sync: Show Output` | Open the extension's output channel |
 
@@ -121,6 +130,7 @@ Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scena
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `any-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
+| `any-sync.syncRepoUrl` | `` | GitHub sync repository URL or `owner/repo`. Pull and push always use this value when set. |
 
 ## Publishing to VS Code Marketplace
 

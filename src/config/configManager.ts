@@ -6,7 +6,7 @@ import { createHash } from 'crypto';
 import { SyncConfig, SyncMapping, ValidationError, validateConfig } from './schema';
 
 export const CONFIG_FILENAME = '.any-sync.json';
-const SYNC_REPO_STATE_KEY = 'any-sync.syncRepo';
+const SYNC_REPO_SETTING_KEY = 'syncRepoUrl';
 const REPO_PATTERN = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
 
 const DEFAULT_CONFIG: SyncConfig = {
@@ -78,30 +78,31 @@ export class ConfigManager implements vscode.Disposable {
       return false;
     }
 
-    let syncRepo = this.getStoredSyncRepo();
+    let syncRepo = this.getConfiguredSyncRepo();
 
     if (!syncRepo) {
       const configRepo = this.getConfigDerivedRepo();
       if (configRepo) {
         syncRepo = configRepo;
-        await this.storeSyncRepo(syncRepo);
+        await this.storeSyncRepoSetting(syncRepo);
       }
     }
 
     if (!syncRepo) {
       const enteredRepo = await vscode.window.showInputBox({
         title: 'Any Sync: Enter sync repository',
-        prompt: 'Repository in owner/repo format',
-        placeHolder: 'owner/repo',
+        prompt: 'GitHub repo URL or owner/repo',
+        placeHolder: 'https://github.com/owner/repo or owner/repo',
         ignoreFocusOut: true,
         validateInput: (value) => {
-          const trimmed = value.trim();
-          if (!trimmed) {
+          if (!value.trim()) {
             return 'Repository is required.';
           }
-          if (!REPO_PATTERN.test(trimmed)) {
-            return 'Use owner/repo format (for example: octocat/hello-world).';
+
+          if (!this.parseRepoInput(value)) {
+            return 'Use a GitHub repo URL or owner/repo format (for example: octocat/hello-world).';
           }
+
           return null;
         },
       });
@@ -110,12 +111,47 @@ export class ConfigManager implements vscode.Disposable {
         return false;
       }
 
-      syncRepo = enteredRepo.trim();
-      await this.storeSyncRepo(syncRepo);
+      const parsedRepo = this.parseRepoInput(enteredRepo);
+      if (!parsedRepo) {
+        return false;
+      }
+
+      syncRepo = parsedRepo;
+      await this.storeSyncRepoSetting(syncRepo);
     }
 
     await this.ensureDefaultConfigForRepo(syncRepo);
     return true;
+  }
+
+  getConfiguredSyncRepo(): string | null {
+    const workspaceFolder = this.getPrimaryWorkspaceFolder();
+    const scope = workspaceFolder?.uri;
+    const configured = vscode.workspace
+      .getConfiguration('any-sync', scope)
+      .get<string>(SYNC_REPO_SETTING_KEY);
+
+    if (!configured) {
+      return null;
+    }
+
+    return this.parseRepoInput(configured);
+  }
+
+  withSyncRepoOverride(mapping: SyncMapping): SyncMapping {
+    const configuredRepo = this.getConfiguredSyncRepo();
+    if (!configuredRepo) {
+      return mapping;
+    }
+
+    if (mapping.repo === configuredRepo) {
+      return mapping;
+    }
+
+    return {
+      ...mapping,
+      repo: configuredRepo,
+    };
   }
 
   /**
@@ -316,7 +352,7 @@ export class ConfigManager implements vscode.Disposable {
       // File doesn't exist — good, we'll create it
     }
 
-    const syncRepo = this.getStoredSyncRepo() ?? this.getConfigDerivedRepo() ?? 'owner/repo';
+    const syncRepo = this.getConfiguredSyncRepo() ?? this.getConfigDerivedRepo() ?? 'owner/repo';
     const content = JSON.stringify(this.buildDefaultConfig(syncRepo), null, 2) + '\n';
     await vscode.workspace.fs.writeFile(
       configUri,
@@ -354,7 +390,7 @@ export class ConfigManager implements vscode.Disposable {
     const exists = await this.fileExists(configUri);
     if (!exists) {
       await this.ensureConfigDirectory(configUri);
-      const syncRepo = this.getStoredSyncRepo() ?? this.getConfigDerivedRepo() ?? 'owner/repo';
+      const syncRepo = this.getConfiguredSyncRepo() ?? this.getConfigDerivedRepo() ?? 'owner/repo';
       const content = JSON.stringify(this.buildDefaultConfig(syncRepo), null, 2) + '\n';
       await vscode.workspace.fs.writeFile(configUri, Buffer.from(content, 'utf8'));
       await this.loadConfig();
@@ -485,22 +521,43 @@ export class ConfigManager implements vscode.Disposable {
     };
   }
 
-  private getStoredSyncRepo(): string | null {
-    const stored = this.extensionContext.workspaceState.get<string>(SYNC_REPO_STATE_KEY);
-    if (!stored) {
-      return null;
-    }
-
-    const trimmed = stored.trim();
-    if (!REPO_PATTERN.test(trimmed) || trimmed === 'owner/repo') {
-      return null;
-    }
-
-    return trimmed;
+  private async storeSyncRepoSetting(repo: string): Promise<void> {
+    const workspaceFolder = this.getPrimaryWorkspaceFolder();
+    const scope = workspaceFolder?.uri;
+    await vscode.workspace
+      .getConfiguration('any-sync', scope)
+      .update(SYNC_REPO_SETTING_KEY, repo, vscode.ConfigurationTarget.Workspace);
   }
 
-  private async storeSyncRepo(repo: string): Promise<void> {
-    await this.extensionContext.workspaceState.update(SYNC_REPO_STATE_KEY, repo);
+  private parseRepoInput(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (REPO_PATTERN.test(trimmed)) {
+      return trimmed;
+    }
+
+    try {
+      const url = new URL(trimmed);
+      if (!/^(www\.)?github\.com$/i.test(url.hostname)) {
+        return null;
+      }
+
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (parts.length < 2) {
+        return null;
+      }
+
+      const owner = parts[0];
+      const repo = parts[1].replace(/\.git$/i, '');
+      const parsed = `${owner}/${repo}`;
+
+      return REPO_PATTERN.test(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
   }
 
   private getConfigDerivedRepo(): string | null {

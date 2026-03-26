@@ -75,10 +75,13 @@ export class SyncEngine implements vscode.Disposable {
         return;
       }
 
-      const didApplyRemoteConfig = await this.applyRemoteConfigAsDefault(mappings);
+      const effectiveMappings = mappings.map((mapping) =>
+        this.configManager.withSyncRepoOverride(mapping),
+      );
+      const didApplyRemoteConfig = await this.applyRemoteConfigAsDefault(effectiveMappings);
       const mappingsToPull = refreshMappingsFromConfig && didApplyRemoteConfig && this.configManager.mappings.length > 0
-        ? this.configManager.mappings
-        : mappings;
+        ? this.configManager.mappings.map((mapping) => this.configManager.withSyncRepoOverride(mapping))
+        : effectiveMappings;
 
       // Load lockfile
       await this.lockfile.load();
@@ -176,19 +179,23 @@ export class SyncEngine implements vscode.Disposable {
         return;
       }
 
+      const effectiveMappings = mappings.map((mapping) =>
+        this.configManager.withSyncRepoOverride(mapping),
+      );
+
       await this.lockfile.load();
 
       await ProgressReporter.withProgress(
         'Any Sync: Pushing...',
         async (progress, cancellationToken) => {
-          for (let i = 0; i < mappings.length; i++) {
+          for (let i = 0; i < effectiveMappings.length; i++) {
             if (cancellationToken.isCancellationRequested) {
               break;
             }
 
-            const mapping = mappings[i];
+            const mapping = effectiveMappings[i];
             progress.report({
-              message: `[${i + 1}/${mappings.length}] Detecting changes for ${mapping.name}...`,
+              message: `[${i + 1}/${effectiveMappings.length}] Detecting changes for ${mapping.name}...`,
             });
 
             const destRoot = this.configManager.resolveDestPath(mapping);
