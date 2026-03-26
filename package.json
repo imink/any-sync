@@ -19,7 +19,7 @@
     "onCommand:any-sync.push",
     "onCommand:any-sync.pullSelect",
     "onCommand:any-sync.pushSelect",
-    "onCommand:any-sync.editConfig",
+    "onCommand:any-sync.initOrEditConfig",
     "onCommand:any-sync.resetConfigAndAuth",
     "onCommand:any-sync.showOutput"
   ],
@@ -43,8 +43,8 @@
         "title": "Any Sync: Push (Select Mapping)"
       },
       {
-        "command": "any-sync.editConfig",
-        "title": "Any Sync: Edit Config"
+        "command": "any-sync.initOrEditConfig",
+        "title": "Any Sync: Init or Edit Config"
       },
       {
         "command": "any-sync.resetConfigAndAuth",

@@ -10,6 +10,7 @@ import { Lockfile } from './lockfile';
 import { ConflictResolver } from '../conflict/conflictResolver';
 import { ProgressReporter } from '../ui/progressReporter';
 import { SyncMapping, validateConfig } from '../config/schema';
+import { minimatch } from 'minimatch';
 
 /**
  * Orchestrates pull and push sync operations.
@@ -49,7 +50,7 @@ export class SyncEngine implements vscode.Disposable {
     const mappings = this.configManager.mappings;
     if (mappings.length === 0) {
       vscode.window.showWarningMessage(
-        'Any Sync: No mappings configured. Run "Any Sync: Edit Config" to set up.',
+        'Any Sync: No mappings configured. Run "Any Sync: Init or Edit Config" to set up.',
       );
       return;
     }
@@ -151,7 +152,7 @@ export class SyncEngine implements vscode.Disposable {
     const mappings = this.configManager.mappings;
     if (mappings.length === 0) {
       vscode.window.showWarningMessage(
-        'Any Sync: No mappings configured. Run "Any Sync: Edit Config" to set up.',
+        'Any Sync: No mappings configured. Run "Any Sync: Init or Edit Config" to set up.',
       );
       return;
     }
@@ -314,6 +315,10 @@ export class SyncEngine implements vscode.Disposable {
   }
 
   private async buildConfigPushFile(mapping: SyncMapping): Promise<PushableFile | null> {
+    if (!this.shouldPushPathForMapping(mapping, CONFIG_FILENAME)) {
+      return null;
+    }
+
     const localConfig = await this.configManager.readConfigFileRaw();
     if (!localConfig) {
       return null;
@@ -338,6 +343,32 @@ export class SyncEngine implements vscode.Disposable {
       localPath: CONFIG_FILENAME,
       content: localConfig,
     };
+  }
+
+  private shouldPushPathForMapping(mapping: SyncMapping, filePath: string): boolean {
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const includes = mapping.include;
+    const excludes = mapping.exclude;
+
+    if (includes && includes.length > 0) {
+      const included = includes.some((pattern) =>
+        minimatch(normalizedPath, pattern, { dot: true }),
+      );
+      if (!included) {
+        return false;
+      }
+    }
+
+    if (excludes && excludes.length > 0) {
+      const excluded = excludes.some((pattern) =>
+        minimatch(normalizedPath, pattern, { dot: true }),
+      );
+      if (excluded) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private async applyRemoteConfigAsDefault(mappings: SyncMapping[]): Promise<boolean> {

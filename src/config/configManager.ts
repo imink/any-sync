@@ -6,6 +6,8 @@ import { createHash } from 'crypto';
 import { SyncConfig, SyncMapping, ValidationError, validateConfig } from './schema';
 
 export const CONFIG_FILENAME = '.any-sync.json';
+const SYNC_REPO_STATE_KEY = 'any-sync.syncRepo';
+const REPO_PATTERN = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
 
 const DEFAULT_CONFIG: SyncConfig = {
   mappings: [
@@ -59,6 +61,61 @@ export class ConfigManager implements vscode.Disposable {
     await this.migrateLegacyConfigIfNeeded();
     await this.loadConfig();
     this.setupWatcher();
+  }
+
+  /**
+   * Ensure we have a sync repo and a config file for this workspace.
+   * Prompts the user once if needed and reuses stored value afterwards.
+   *
+   * @returns false if setup was cancelled or no workspace is open.
+   */
+  async ensureSyncRepoConfigured(): Promise<boolean> {
+    const workspaceFolder = this.getPrimaryWorkspaceFolder();
+    if (!workspaceFolder) {
+      vscode.window.showErrorMessage(
+        'Any Sync: No workspace folder open. Please open a folder first.',
+      );
+      return false;
+    }
+
+    let syncRepo = this.getStoredSyncRepo();
+
+    if (!syncRepo) {
+      const configRepo = this.getConfigDerivedRepo();
+      if (configRepo) {
+        syncRepo = configRepo;
+        await this.storeSyncRepo(syncRepo);
+      }
+    }
+
+    if (!syncRepo) {
+      const enteredRepo = await vscode.window.showInputBox({
+        title: 'Any Sync: Enter sync repository',
+        prompt: 'Repository in owner/repo format',
+        placeHolder: 'owner/repo',
+        ignoreFocusOut: true,
+        validateInput: (value) => {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return 'Repository is required.';
+          }
+          if (!REPO_PATTERN.test(trimmed)) {
+            return 'Use owner/repo format (for example: octocat/hello-world).';
+          }
+          return null;
+        },
+      });
+
+      if (!enteredRepo) {
+        return false;
+      }
+
+      syncRepo = enteredRepo.trim();
+      await this.storeSyncRepo(syncRepo);
+    }
+
+    await this.ensureDefaultConfigForRepo(syncRepo);
+    return true;
   }
 
   /**
@@ -259,7 +316,8 @@ export class ConfigManager implements vscode.Disposable {
       // File doesn't exist — good, we'll create it
     }
 
-    const content = JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n';
+    const syncRepo = this.getStoredSyncRepo() ?? this.getConfigDerivedRepo() ?? 'owner/repo';
+    const content = JSON.stringify(this.buildDefaultConfig(syncRepo), null, 2) + '\n';
     await vscode.workspace.fs.writeFile(
       configUri,
       Buffer.from(content, 'utf8'),
@@ -279,7 +337,12 @@ export class ConfigManager implements vscode.Disposable {
   /**
    * Open the current workspace config file (creating a starter file if needed).
    */
-  async openConfig(): Promise<void> {
+  async initOrEditConfig(): Promise<void> {
+    const configured = await this.ensureSyncRepoConfigured();
+    if (!configured) {
+      return;
+    }
+
     const configUri = this.getConfigUri();
     if (!configUri) {
       vscode.window.showErrorMessage(
@@ -291,7 +354,8 @@ export class ConfigManager implements vscode.Disposable {
     const exists = await this.fileExists(configUri);
     if (!exists) {
       await this.ensureConfigDirectory(configUri);
-      const content = JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n';
+      const syncRepo = this.getStoredSyncRepo() ?? this.getConfigDerivedRepo() ?? 'owner/repo';
+      const content = JSON.stringify(this.buildDefaultConfig(syncRepo), null, 2) + '\n';
       await vscode.workspace.fs.writeFile(configUri, Buffer.from(content, 'utf8'));
       await this.loadConfig();
     }
@@ -315,7 +379,7 @@ export class ConfigManager implements vscode.Disposable {
     const exists = await this.fileExists(configUri);
     if (!exists) {
       vscode.window.showInformationMessage(
-        `Any Sync: Config does not exist yet. Run "Any Sync: Edit Config" first.`,
+        `Any Sync: Config does not exist yet. Run "Any Sync: Init or Edit Config" first.`,
       );
       return;
     }
@@ -410,6 +474,82 @@ export class ConfigManager implements vscode.Disposable {
     } catch {
       return false;
     }
+  }
+
+  private buildDefaultConfig(repo: string): SyncConfig {
+    return {
+      mappings: DEFAULT_CONFIG.mappings.map((mapping) => ({
+        ...mapping,
+        repo,
+      })),
+    };
+  }
+
+  private getStoredSyncRepo(): string | null {
+    const stored = this.extensionContext.workspaceState.get<string>(SYNC_REPO_STATE_KEY);
+    if (!stored) {
+      return null;
+    }
+
+    const trimmed = stored.trim();
+    if (!REPO_PATTERN.test(trimmed) || trimmed === 'owner/repo') {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  private async storeSyncRepo(repo: string): Promise<void> {
+    await this.extensionContext.workspaceState.update(SYNC_REPO_STATE_KEY, repo);
+  }
+
+  private getConfigDerivedRepo(): string | null {
+    const mappings = this._config?.mappings ?? [];
+    for (const mapping of mappings) {
+      const repo = mapping.repo.trim();
+      if (repo && repo !== 'owner/repo' && REPO_PATTERN.test(repo)) {
+        return repo;
+      }
+    }
+
+    return null;
+  }
+
+  private shouldUpdateMappingRepo(repo: string): boolean {
+    const mappings = this._config?.mappings ?? [];
+    if (mappings.length === 0) {
+      return true;
+    }
+
+    return mappings.every((mapping) => {
+      const currentRepo = mapping.repo.trim();
+      return currentRepo === '' || currentRepo === 'owner/repo' || !REPO_PATTERN.test(currentRepo);
+    });
+  }
+
+  private async ensureDefaultConfigForRepo(repo: string): Promise<void> {
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      return;
+    }
+
+    const exists = await this.fileExists(configUri);
+    if (!exists) {
+      await this.ensureConfigDirectory(configUri);
+      const content = JSON.stringify(this.buildDefaultConfig(repo), null, 2) + '\n';
+      await vscode.workspace.fs.writeFile(configUri, Buffer.from(content, 'utf8'));
+      await this.loadConfig();
+      return;
+    }
+
+    if (!this.shouldUpdateMappingRepo(repo)) {
+      return;
+    }
+
+    const updatedConfig = this.buildDefaultConfig(repo);
+    const content = JSON.stringify(updatedConfig, null, 2) + '\n';
+    await vscode.workspace.fs.writeFile(configUri, Buffer.from(content, 'utf8'));
+    await this.loadConfig();
   }
 
   /**

@@ -14,7 +14,7 @@ export async function pickMappings(
 ): Promise<SyncMapping[] | undefined> {
   if (mappings.length === 0) {
     vscode.window.showWarningMessage(
-      'Any Sync: No mappings configured. Run "Any Sync: Init Config" to create a config file.',
+      'Any Sync: No mappings configured. Run "Any Sync: Init or Edit Config" to create a config file.',
     );
     return undefined;
   }

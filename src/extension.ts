@@ -31,14 +31,38 @@ export function activate(context: vscode.ExtensionContext): void {
     outputChannel.appendLine(`Any Sync: Could not create SyncEngine: ${err}`);
   }
 
+  const ensureSyncRepoReady = async (): Promise<boolean> => {
+    try {
+      return await configManager.ensureSyncRepoConfigured();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      outputChannel.appendLine(`Any Sync: Failed to initialize sync repo: ${message}`);
+      vscode.window.showErrorMessage(`Any Sync: Failed to initialize sync repo: ${message}`);
+      return false;
+    }
+  };
+
   // Register commands
-  const editConfigCommand = vscode.commands.registerCommand('any-sync.editConfig', async () => {
-    await configManager.openConfig();
-  });
+  const initOrEditConfigCommand = vscode.commands.registerCommand(
+    'any-sync.initOrEditConfig',
+    async () => {
+      const ready = await ensureSyncRepoReady();
+      if (!ready) {
+        return;
+      }
+
+      await configManager.initOrEditConfig();
+    },
+  );
 
   const resetConfigAndAuthCommand = vscode.commands.registerCommand(
     'any-sync.resetConfigAndAuth',
     async () => {
+      const ready = await ensureSyncRepoReady();
+      if (!ready) {
+        return;
+      }
+
       const confirmation = await vscode.window.showWarningMessage(
         'Any Sync: Reset local config and GitHub auth status? This removes Any Sync local config from VS Code storage and clears Any Sync auth preference.',
         { modal: true },
@@ -64,7 +88,11 @@ export function activate(context: vscode.ExtensionContext): void {
         if (nextAction === 'Sign In with Another Account') {
           await authManager.signInWithDifferentAccount();
         } else if (nextAction === 'Edit Config') {
-          await configManager.openConfig();
+          const ready = await ensureSyncRepoReady();
+          if (!ready) {
+            return;
+          }
+          await configManager.initOrEditConfig();
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -79,12 +107,20 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
       return;
     }
+    const ready = await ensureSyncRepoReady();
+    if (!ready) {
+      return;
+    }
     await syncEngine.pullAll();
   });
 
   const pullSelectCommand = vscode.commands.registerCommand('any-sync.pullSelect', async () => {
     if (!syncEngine) {
       vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
+      return;
+    }
+    const ready = await ensureSyncRepoReady();
+    if (!ready) {
       return;
     }
     const selected = await pickMappings(configManager.mappings, 'pull');
@@ -98,12 +134,20 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
       return;
     }
+    const ready = await ensureSyncRepoReady();
+    if (!ready) {
+      return;
+    }
     await syncEngine.pushAll();
   });
 
   const pushSelectCommand = vscode.commands.registerCommand('any-sync.pushSelect', async () => {
     if (!syncEngine) {
       vscode.window.showErrorMessage('Any Sync: No workspace folder open.');
+      return;
+    }
+    const ready = await ensureSyncRepoReady();
+    if (!ready) {
       return;
     }
     const selected = await pickMappings(configManager.mappings, 'push');
@@ -113,7 +157,11 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   const showOutputCommand = vscode.commands.registerCommand('any-sync.showOutput', () => {
-    outputChannel.show();
+    void ensureSyncRepoReady().then((ready) => {
+      if (ready) {
+        outputChannel.show();
+      }
+    });
   });
 
   context.subscriptions.push(
@@ -122,7 +170,7 @@ export function activate(context: vscode.ExtensionContext): void {
     configManager,
     authManager,
     githubClient,
-    editConfigCommand,
+    initOrEditConfigCommand,
     resetConfigAndAuthCommand,
     pullCommand,
     pullSelectCommand,

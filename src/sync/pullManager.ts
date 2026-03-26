@@ -98,6 +98,8 @@ export class PullManager {
           entry.path,
           localFilePath,
         );
+        const hasLocalFile = await this.pathExists(localFilePath);
+        const hasLockEntry = this.lockfile.getEntry(mapping.name, entry.path) !== null;
 
         if (!remoteChanged && !locallyModified) {
           unchanged.push({
@@ -105,7 +107,7 @@ export class PullManager {
             status: 'unchanged',
             remoteSha: entry.sha,
           });
-        } else if (remoteChanged && locallyModified) {
+        } else if (remoteChanged && (locallyModified || (hasLocalFile && !hasLockEntry))) {
           // Both changed — conflict, still need to download remote for diff
           toDownload.push(entry);
         } else if (remoteChanged) {
@@ -154,16 +156,22 @@ export class PullManager {
             entry.path,
             localFilePath,
           );
+          const hasLockEntry = this.lockfile.getEntry(mapping.name, entry.path) !== null;
 
-          if (locallyModified) {
+          let localContent: Buffer | undefined;
+          try {
+            localContent = await fs.readFile(localFilePath);
+          } catch {
+            // File doesn't exist locally.
+          }
+
+          const isUntrackedLocalConflict =
+            !hasLockEntry &&
+            localContent !== undefined &&
+            Buffer.compare(localContent, remoteContent) !== 0;
+
+          if (locallyModified || isUntrackedLocalConflict) {
             // Conflict: both local and remote changed
-            let localContent: Buffer | undefined;
-            try {
-              localContent = await fs.readFile(localFilePath);
-            } catch {
-              // Local file was deleted? Treat as no conflict.
-            }
-
             files.push({
               relativePath: entry.path,
               status: 'conflict',
@@ -211,6 +219,15 @@ export class PullManager {
       errors.push(errMsg);
       this.outputChannel.appendLine(`Any Sync: Pull failed for ${mapping.name}: ${errMsg}`);
       return { mapping, files, errors };
+    }
+  }
+
+  private async pathExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.stat(filePath);
+      return true;
+    } catch {
+      return false;
     }
   }
 
