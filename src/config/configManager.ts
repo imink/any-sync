@@ -7,6 +7,7 @@ import { SyncConfig, SyncMapping, ValidationError, validateConfig } from './sche
 
 export const CONFIG_FILENAME = '.any-sync.json';
 const SYNC_REPO_SETTING_KEY = 'syncRepoUrl';
+const SYNC_REPO_LEGACY_STATE_KEY = 'any-sync.syncRepo';
 const REPO_PATTERN = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
 
 const DEFAULT_CONFIG: SyncConfig = {
@@ -131,11 +132,13 @@ export class ConfigManager implements vscode.Disposable {
       .getConfiguration('any-sync', scope)
       .get<string>(SYNC_REPO_SETTING_KEY);
 
-    if (!configured) {
-      return null;
+    const parsedConfigured = configured ? this.parseRepoInput(configured) : null;
+    if (parsedConfigured) {
+      return parsedConfigured;
     }
 
-    return this.parseRepoInput(configured);
+    const legacy = this.extensionContext.workspaceState.get<string>(SYNC_REPO_LEGACY_STATE_KEY);
+    return legacy ? this.parseRepoInput(legacy) : null;
   }
 
   withSyncRepoOverride(mapping: SyncMapping): SyncMapping {
@@ -524,9 +527,18 @@ export class ConfigManager implements vscode.Disposable {
   private async storeSyncRepoSetting(repo: string): Promise<void> {
     const workspaceFolder = this.getPrimaryWorkspaceFolder();
     const scope = workspaceFolder?.uri;
-    await vscode.workspace
-      .getConfiguration('any-sync', scope)
-      .update(SYNC_REPO_SETTING_KEY, repo, vscode.ConfigurationTarget.Workspace);
+
+    try {
+      await vscode.workspace
+        .getConfiguration('any-sync', scope)
+        .update(SYNC_REPO_SETTING_KEY, repo, vscode.ConfigurationTarget.Workspace);
+      await this.extensionContext.workspaceState.update(SYNC_REPO_LEGACY_STATE_KEY, repo);
+      return;
+    } catch {
+      // Some VS Code states may report the setting as unregistered. Fall back to local state.
+    }
+
+    await this.extensionContext.workspaceState.update(SYNC_REPO_LEGACY_STATE_KEY, repo);
   }
 
   private parseRepoInput(value: string): string | null {
