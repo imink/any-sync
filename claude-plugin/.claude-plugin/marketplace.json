@@ -1,0 +1,10 @@
+{
+  "name": "any-sync-marketplace",
+  "description": "Cross-device sync for Claude skills, memory, settings, and custom files via GitHub",
+  "plugins": [
+    {
+      "name": "any-sync",
+      "path": "."
+    }
+  ]
+}
