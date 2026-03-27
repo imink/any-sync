@@ -81,5 +81,11 @@ else
   exit 1
 fi
 
+# Test gh_api_retry is available
+type gh_api_retry >/dev/null 2>&1 && echo "PASS: gh_api_retry function exists" || {
+  echo "FAIL: gh_api_retry not defined" >&2
+  exit 1
+}
+
 echo ""
 echo "All lockfile tests passed."
