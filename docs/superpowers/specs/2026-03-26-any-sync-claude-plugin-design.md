@@ -246,13 +246,15 @@ The VS Code extension and Claude plugin use **separate auth mechanisms** — the
 
 Required:
 - `gh` (GitHub CLI) — for all GitHub API calls
+- `jq` — for local JSON parsing in hook scripts and utilities
 - `bash` (3.2+) — for script execution. Scripts avoid bash 4+ features (associative arrays, `mapfile`, etc.) to support stock macOS bash. Git for Windows provides bash on Windows.
 - Standard POSIX utilities: `sha256sum` or `shasum`, `base64`, `mktemp`, `mv`
 
 Not required:
-- `jq` — scripts use `gh api --jq` for JSON parsing (built into `gh`)
 - `git` — not needed (all operations use GitHub REST API via `gh api`)
 - `node` — not needed
+
+**Note:** `gh api --jq` is used for filtering GitHub API responses. `jq` is used separately for parsing local JSON (script output, config files, lockfiles).
 
 ### Path Resolution
 
@@ -490,8 +492,8 @@ fi
 # Run pull, passing lockfile path as second argument (defaults to .any-sync.lock in cwd)
 LOCKFILE=".any-sync.lock"
 RESULT=$("${SCRIPT_DIR}/scripts/any-sync-pull.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null)
-# Parse pulled file count from JSON array using gh's built-in jq
-PULL_COUNT=$(echo "$RESULT" | gh api --input - --jq '.pulled | length' 2>/dev/null || echo "0")
+# Parse pulled file count from JSON array using jq
+PULL_COUNT=$(echo "$RESULT" | jq '.pulled | length' 2>/dev/null || echo "0")
 
 # Output context for Claude using printf (avoids bash 5.3+ heredoc bug)
 printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "Any Sync: auto-pulled %s file(s) from GitHub. Use /any-sync:status for details."\n  }\n}\n' "$PULL_COUNT"
@@ -520,7 +522,7 @@ fi
 LOCKFILE=".any-sync.lock"
 RESULT=$("${SCRIPT_DIR}/scripts/any-sync-status.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null)
 # Check if any mapping has a non-empty changes array
-HAS_CHANGES=$(echo "$RESULT" | gh api --input - --jq '[.mappings[].changes | length] | add // 0' 2>/dev/null || echo "0")
+HAS_CHANGES=$(echo "$RESULT" | jq '[.mappings[].changes | length] | add // 0' 2>/dev/null || echo "0")
 
 if [ "$HAS_CHANGES" -gt 0 ]; then
   "${SCRIPT_DIR}/scripts/any-sync-push.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null
@@ -558,7 +560,7 @@ scripts/*.sh text eol=lf
 - **Network errors:** Shell scripts wrap `gh api` calls with retry (up to 3 attempts, exponential backoff: 1s, 2s, 4s) on 5xx errors and network failures only. 4xx errors (auth, not found) fail immediately.
 - **Conflicts (pull):** Reported to user via skill. Claude helps resolve interactively (keep local / take remote / skip).
 - **Rate limits:** `gh api` handles rate limiting automatically (built-in retry).
-- **Missing `gh` CLI:** Error with setup instructions. `gh` is required — no `curl` fallback to avoid reimplementing the full Git Data API.
+- **Missing `gh` CLI or `jq`:** Error with setup instructions. Both are required — no fallback.
 - **Push ref update fails:** If blob/tree/commit creation fails, abort cleanly. If ref update fails (concurrent push), report error and suggest re-pull.
 - **No bash on Windows:** Hooks exit silently via `run-hook.cmd` graceful degradation. Skills require bash (Git for Windows).
 
