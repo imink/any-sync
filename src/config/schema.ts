@@ -7,7 +7,7 @@ export interface SyncMapping {
   name: string;
   /** GitHub repository in owner/repo format */
   repo: string;
-  /** Branch to sync from (default: repo default branch) */
+  /** Branch to sync from/push to (default: main) */
   branch?: string;
   /** Path within the GitHub repo to sync from */
   sourcePath: string;

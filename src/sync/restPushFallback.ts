@@ -16,7 +16,7 @@ export class RestPushFallback {
   /**
    * Push changed files via the GitHub REST API.
    *
-   * This creates blobs, a tree, a commit, and a new branch — all via REST.
+   * This creates blobs, a tree, and a commit, then updates the configured branch.
    *
    * @param mapping - The sync mapping
    * @param files - Files to push
@@ -28,7 +28,6 @@ export class RestPushFallback {
   ): Promise<PushResult> {
     const [owner, repo] = mapping.repo.split('/');
     const baseBranch = mapping.branch || 'main';
-    const pushBranch = `any-sync/${Date.now()}`;
 
     this.outputChannel.appendLine(
       `Any Sync: Pushing ${files.length} files via REST API to ${owner}/${repo}...`,
@@ -98,21 +97,21 @@ export class RestPushFallback {
       [latestCommitSha],
     );
 
-    // 5. Create the new branch
+    // 5. Update the configured branch to point at the new commit
     await this.githubClient.createOrUpdateRef(
       owner,
       repo,
-      pushBranch,
+      baseBranch,
       newCommitSha,
     );
 
     this.outputChannel.appendLine(
-      `Any Sync: Pushed ${files.length} files to branch ${pushBranch} via REST API`,
+      `Any Sync: Pushed ${files.length} files to branch ${baseBranch} via REST API`,
     );
 
     return {
       mapping,
-      branch: pushBranch,
+      branch: baseBranch,
       files,
       usedGit: false,
     };

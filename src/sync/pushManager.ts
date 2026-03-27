@@ -203,7 +203,6 @@ export class PushManager {
   ): Promise<PushResult> {
     const [owner, repo] = mapping.repo.split('/');
     const branch = mapping.branch || 'main';
-    const pushBranch = `any-sync/${Date.now()}`;
     const tmpDir = path.join(os.tmpdir(), `any-sync-push-${Date.now()}`);
 
     try {
@@ -255,17 +254,16 @@ export class PushManager {
         await fs.writeFile(destPath, file.content);
       }
 
-      // Create branch, stage, commit, push
-      await cloneGit.checkoutLocalBranch(pushBranch);
+      // Stage, commit, and push directly to the configured branch.
       await cloneGit.add('.');
       await cloneGit.commit(commitMessage);
-      await cloneGit.push('origin', pushBranch);
+      await cloneGit.push('origin', branch);
 
-      this.outputChannel.appendLine(`Any Sync: Pushed ${files.length} files to branch ${pushBranch}`);
+      this.outputChannel.appendLine(`Any Sync: Pushed ${files.length} files to branch ${branch}`);
 
       return {
         mapping,
-        branch: pushBranch,
+        branch,
         files,
         usedGit: true,
       };

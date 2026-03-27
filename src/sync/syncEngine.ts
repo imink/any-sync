@@ -4,7 +4,6 @@ import { AuthManager } from '../github/authManager';
 import { GitHubClient } from '../github/githubClient';
 import { PullManager, PullFileResult, PullResult } from './pullManager';
 import { PushManager, PushableFile } from './pushManager';
-import { PrCreator } from './prCreator';
 import { RestPushFallback } from './restPushFallback';
 import { Lockfile } from './lockfile';
 import { ConflictResolver } from '../conflict/conflictResolver';
@@ -18,7 +17,6 @@ import { minimatch } from 'minimatch';
 export class SyncEngine implements vscode.Disposable {
   private readonly pullManager: PullManager;
   private readonly pushManager: PushManager;
-  private readonly prCreator: PrCreator;
   private readonly restPushFallback: RestPushFallback;
   private readonly lockfile: Lockfile;
   private readonly conflictResolver: ConflictResolver;
@@ -38,7 +36,6 @@ export class SyncEngine implements vscode.Disposable {
     this.lockfile = new Lockfile(workspaceRoot);
     this.pullManager = new PullManager(this.githubClient, this.lockfile, this.outputChannel);
     this.pushManager = new PushManager(this.lockfile, this.outputChannel);
-    this.prCreator = new PrCreator(this.githubClient, this.outputChannel);
     this.restPushFallback = new RestPushFallback(this.githubClient, this.outputChannel);
     this.conflictResolver = new ConflictResolver();
   }
@@ -214,21 +211,21 @@ export class SyncEngine implements vscode.Disposable {
 
             // Show confirmation dialog
             const fileList = changes.map((f) => f.repoPath ?? f.relativePath).join(', ');
+            const targetBranch = mapping.branch || 'main';
             const confirm = await vscode.window.showWarningMessage(
-              `Any Sync: Push ${changes.length} changed file(s) for "${mapping.name}"?\n\nFiles: ${fileList}`,
+              `Any Sync: Push ${changes.length} changed file(s) for "${mapping.name}" to branch "${targetBranch}"?\n\nFiles: ${fileList}`,
               { modal: true },
-              'Push & Create PR',
+              'Push',
               'Cancel',
             );
 
-            if (confirm !== 'Push & Create PR') {
+            if (confirm !== 'Push') {
               continue;
             }
 
-            progress.report({ message: `Pushing ${changes.length} files...` });
+            progress.report({ message: `Pushing ${changes.length} files to ${targetBranch}...` });
 
             // Try git first, fall back to REST API
-            let pushResult;
             const gitAvailable = await this.pushManager.isGitAvailable();
 
             if (gitAvailable) {
@@ -236,19 +233,15 @@ export class SyncEngine implements vscode.Disposable {
                 ? `sync: Update ${changes[0].relativePath} via Any Sync`
                 : `sync: Update ${changes.length} files in ${mapping.sourcePath} via Any Sync`;
 
-              pushResult = await this.pushManager.pushViaGit(
+              await this.pushManager.pushViaGit(
                 mapping,
                 changes,
                 token,
                 commitMessage,
               );
             } else {
-              pushResult = await this.restPushFallback.push(mapping, changes);
+              await this.restPushFallback.push(mapping, changes);
             }
-
-            // Create PR
-            progress.report({ message: 'Creating pull request...' });
-            await this.prCreator.createPr(mapping, pushResult.branch, changes);
           }
         },
       );

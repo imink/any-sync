@@ -4,12 +4,12 @@
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/patrickw1029.any-sync?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync)
 
-Bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back via pull requests.
+Bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back directly to your configured branch.
 
 ## Features
 
 - **Pull from GitHub**: Download files from any GitHub repo directory to your local workspace
-- **Push via PR**: Push local changes back to GitHub through automated pull requests
+- **Direct push**: Push local changes back to your configured GitHub branch
 - **Incremental sync**: Only downloads changed files using SHA-based tracking
 - **Conflict resolution**: Side-by-side diff view when both local and remote files have changed
 - **Flexible configuration**: Sync multiple repos/paths with include/exclude glob patterns
@@ -59,7 +59,7 @@ Config format:
 |-------|----------|-------------|
 | `name` | ✅ | Human-readable name for this mapping |
 | `repo` | ✅ | GitHub repo in `owner/repo` format |
-| `branch` | | Branch to sync from (default: repo's default branch) |
+| `branch` | | Branch to sync from/push to (default: `main`) |
 | `sourcePath` | ✅ | Path within the repo to sync from |
 | `destPath` | ✅ | Local destination (relative to workspace root, or absolute) |
 | `include` | | Glob patterns to include (default: all files) |
@@ -116,8 +116,7 @@ Example mapping for cross-device Copilot memory sync:
 ### Push
 1. Detects locally modified files by comparing content hashes
 2. Creates a temporary sparse git checkout (or uses REST API if git unavailable)
-3. Pushes changes to a new branch
-4. Creates a pull request with a summary of changes
+3. Pushes changes directly to the configured branch (default: `main`)
 
 ## Authentication
 

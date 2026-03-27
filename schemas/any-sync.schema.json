@@ -24,7 +24,7 @@
           },
           "branch": {
             "type": "string",
-            "description": "Branch to sync from (default: repo default branch)",
+            "description": "Branch to sync from/push to (default: main)",
             "default": "main"
           },
           "sourcePath": {
