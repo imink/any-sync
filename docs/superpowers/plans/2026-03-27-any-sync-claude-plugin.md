@@ -164,6 +164,7 @@ Write `claude-plugin/scripts/any-sync-lockfile.sh`. This script is sourced by ot
 #   lockfile_get_last_sync <name> — Print lastSync for mapping, or "null"
 #   hash_file <path>              — Print bare hex SHA-256 of file
 #   lockfile_make_key <mapping> <relpath>  — Print "mapping::relpath"
+#   gh_api_retry <args...>        — Retry gh api on 5xx/network errors (3 attempts, exponential backoff)
 
 # Detect hash command (macOS uses shasum, Linux uses sha256sum)
 if command -v sha256sum >/dev/null 2>&1; then
@@ -206,7 +207,7 @@ lockfile_make_key() {
 
 lockfile_get_entry() {
   local key="$1"
-  echo "$_LOCKFILE_DATA" | jq -r ".files[\"$key\"] // null"
+  echo "$_LOCKFILE_DATA" | jq -r --arg k "$key" '.files[$k] // null'
 }
 
 lockfile_set_entry() {
@@ -241,12 +242,49 @@ lockfile_set_last_sync() {
 
 lockfile_get_last_sync() {
   local name="$1"
-  echo "$_LOCKFILE_DATA" | jq -r ".lastSync[\"$name\"] // null"
+  echo "$_LOCKFILE_DATA" | jq -r --arg n "$name" '.lastSync[$n] // null'
 }
 
 hash_file() {
   local filepath="$1"
   $_HASH_CMD "$filepath" | cut -d' ' -f1
+}
+
+# Retry wrapper for gh api calls (3 attempts, exponential backoff: 1s, 2s, 4s)
+# Only retries on 5xx errors and network failures
+gh_api_retry() {
+  local attempt=0
+  local max_attempts=3
+  local backoff=1
+  local output
+  local exit_code
+
+  while [ $attempt -lt $max_attempts ]; do
+    output=$(gh api "$@" 2>&1) && {
+      echo "$output"
+      return 0
+    }
+    exit_code=$?
+    attempt=$((attempt + 1))
+
+    # Check if it's a retryable error (5xx or network failure)
+    case "$output" in
+      *"502"*|*"503"*|*"500"*|*"504"*|*"connect"*|*"timeout"*|*"network"*)
+        if [ $attempt -lt $max_attempts ]; then
+          sleep $backoff
+          backoff=$((backoff * 2))
+        fi
+        ;;
+      *)
+        # Non-retryable error (4xx, auth, etc.) — fail immediately
+        echo "$output" >&2
+        return $exit_code
+        ;;
+    esac
+  done
+
+  echo "$output" >&2
+  return $exit_code
 }
 ```
 
@@ -569,8 +607,9 @@ if [ "$CONFIG_VALID" = "true" ]; then
     TRACKED=$(echo "$ENTRIES" | jq 'length')
 
     # Check each tracked file for local changes
-    for KEY in $(echo "$ENTRIES" | jq -r 'keys[]'); do
-      STORED_HASH=$(echo "$ENTRIES" | jq -r ".[\"$KEY\"].localHash")
+    while IFS= read -r KEY; do
+      [ -z "$KEY" ] && continue
+      STORED_HASH=$(echo "$ENTRIES" | jq -r --arg k "$KEY" '.[$k].localHash')
       LOCAL_FILE="${DEST_PATH}/${KEY}"
       if [ -f "$LOCAL_FILE" ]; then
         CURRENT_HASH=$(hash_file "$LOCAL_FILE")
@@ -579,14 +618,45 @@ if [ "$CONFIG_VALID" = "true" ]; then
             '. + [{"file": $f, "type": $t}]')
         fi
       fi
-    done
+    done < <(echo "$ENTRIES" | jq -r 'keys[]')
 
     # Check for new files (not tracked in lockfile)
     if [ -d "$DEST_PATH" ]; then
-      # Get include/exclude from config
-      INCLUDE=$(jq -r ".mappings[$i].include // [] | .[]" "$CONFIG_PATH" 2>/dev/null) || true
+      # Read include/exclude from config for filtering
+      INCLUDE_JSON=$(jq -c ".mappings[$i].include // []" "$CONFIG_PATH")
+      EXCLUDE_JSON=$(jq -c ".mappings[$i].exclude // []" "$CONFIG_PATH")
+      INCLUDE_COUNT=$(echo "$INCLUDE_JSON" | jq 'length')
+      EXCLUDE_COUNT=$(echo "$EXCLUDE_JSON" | jq 'length')
+
       while IFS= read -r -d '' LOCAL_FILE; do
         REL_PATH="${LOCAL_FILE#${DEST_PATH}/}"
+
+        # Apply include filter
+        if [ "$INCLUDE_COUNT" -gt 0 ]; then
+          MATCHED="false"
+          for pi in $(seq 0 $((INCLUDE_COUNT - 1))); do
+            PATTERN=$(echo "$INCLUDE_JSON" | jq -r ".[$pi]")
+            SIMPLE_PATTERN=$(echo "$PATTERN" | sed 's:\*\*/::g')
+            case "$REL_PATH" in
+              $SIMPLE_PATTERN) MATCHED="true"; break ;;
+            esac
+          done
+          if [ "$MATCHED" = "false" ]; then continue; fi
+        fi
+
+        # Apply exclude filter
+        if [ "$EXCLUDE_COUNT" -gt 0 ]; then
+          EXCLUDED="false"
+          for pi in $(seq 0 $((EXCLUDE_COUNT - 1))); do
+            PATTERN=$(echo "$EXCLUDE_JSON" | jq -r ".[$pi]")
+            SIMPLE_PATTERN=$(echo "$PATTERN" | sed 's:\*\*/::g')
+            case "$REL_PATH" in
+              $SIMPLE_PATTERN) EXCLUDED="true"; break ;;
+            esac
+          done
+          if [ "$EXCLUDED" = "true" ]; then continue; fi
+        fi
+
         LOCK_KEY=$(lockfile_make_key "$NAME" "$REL_PATH")
         ENTRY=$(lockfile_get_entry "$LOCK_KEY")
         if [ "$ENTRY" = "null" ]; then
@@ -664,6 +734,7 @@ Write `claude-plugin/scripts/any-sync-pull.sh`:
 # Usage: any-sync-pull.sh <config-path> [lockfile-path]
 # Output: JSON { "pulled": [...], "conflicts": [...], "skipped": [...] }
 set -euo pipefail
+shopt -s extglob
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/any-sync-lockfile.sh"
@@ -717,12 +788,23 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
     PREFIX="${SOURCE_PATH}/"
   fi
 
-  # Fetch recursive tree
-  TREE=$(gh api "/repos/${OWNER}/${REPO_NAME}/git/trees/${BRANCH}?recursive=1" \
-    --jq ".tree[] | select(.type == \"blob\") | select(.path | startswith(\"${PREFIX}\"))" 2>/dev/null) || {
+  # Fetch recursive tree, filter by prefix using jq --arg for safety
+  TREE=$(gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/trees/${BRANCH}?recursive=1" \
+    --jq ".tree[] | select(.type == \"blob\")" 2>/dev/null) || {
     echo "Error: Failed to fetch tree for ${REPO} branch ${BRANCH}" >&2
     continue
   }
+
+  # Filter by prefix locally using jq with --arg to avoid injection
+  if [ -n "$PREFIX" ]; then
+    TREE=$(echo "$TREE" | jq -c --arg pfx "$PREFIX" 'select(.path | startswith($pfx))')
+  fi
+
+  # Guard against empty tree
+  if [ -z "$TREE" ]; then
+    lockfile_set_last_sync "$NAME"
+    continue
+  fi
 
   # Process each file in the tree
   while IFS=$'\t' read -r FILE_PATH FILE_SHA; do
@@ -794,7 +876,7 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
     fi
 
     # Download the blob
-    BLOB_CONTENT=$(gh api "/repos/${OWNER}/${REPO_NAME}/git/blobs/${FILE_SHA}" \
+    BLOB_CONTENT=$(gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/blobs/${FILE_SHA}" \
       --jq '.content' 2>/dev/null) || {
       echo "Error: Failed to download blob for $REL_PATH" >&2
       continue
@@ -881,6 +963,7 @@ Write `claude-plugin/scripts/any-sync-push.sh`:
 # Usage: any-sync-push.sh <config-path> [lockfile-path]
 # Output: JSON { "pushed": [...], "branch": "..." }
 set -euo pipefail
+shopt -s extglob
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/any-sync-lockfile.sh"
@@ -935,7 +1018,6 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
   SOURCE_PATH=$(echo "$SOURCE_PATH" | sed 's:^/*::;s:/*$::')
 
   # Find changed and new files
-  CHANGED_FILES=""
   TREE_ENTRIES="[]"
 
   while IFS= read -r -d '' LOCAL_FILE; do
@@ -994,7 +1076,7 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
 
       # Create blob (base64 encoded)
       BLOB_CONTENT=$(base64 < "$LOCAL_FILE")
-      BLOB_SHA=$(gh api "/repos/${OWNER}/${REPO_NAME}/git/blobs" \
+      BLOB_SHA=$(gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/blobs" \
         -f content="$BLOB_CONTENT" \
         -f encoding="base64" \
         --jq '.sha') || {
@@ -1007,7 +1089,6 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
         --arg s "$BLOB_SHA" \
         '. + [{"path": $p, "mode": "100644", "type": "blob", "sha": $s}]')
 
-      CHANGED_FILES="${CHANGED_FILES}${REL_PATH}\n"
       ALL_PUSHED=$(echo "$ALL_PUSHED" | jq \
         --arg f "$REL_PATH" --arg m "$NAME" --arg bs "$BLOB_SHA" --arg lh "$CURRENT_HASH" \
         '. + [{"file": $f, "mapping": $m, "blobSha": $bs, "localHash": $lh}]')
@@ -1020,34 +1101,27 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
   fi
 
   # Get current commit SHA
-  COMMIT_SHA=$(gh api "/repos/${OWNER}/${REPO_NAME}/git/ref/heads/${BRANCH}" \
+  COMMIT_SHA=$(gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/ref/heads/${BRANCH}" \
     --jq '.object.sha') || {
     echo "Error: Failed to get commit SHA for branch $BRANCH" >&2
     exit 1
   }
 
   # Get base tree SHA
-  BASE_TREE_SHA=$(gh api "/repos/${OWNER}/${REPO_NAME}/git/commits/${COMMIT_SHA}" \
+  BASE_TREE_SHA=$(gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/commits/${COMMIT_SHA}" \
     --jq '.tree.sha') || {
     echo "Error: Failed to get base tree SHA" >&2
     exit 1
   }
 
-  # Create new tree
-  NEW_TREE_SHA=$(echo "$TREE_ENTRIES" | gh api "/repos/${OWNER}/${REPO_NAME}/git/trees" \
+  # Create new tree (construct full payload with jq, pass via --input)
+  PAYLOAD=$(jq -n --arg bt "$BASE_TREE_SHA" --argjson tree "$TREE_ENTRIES" \
+    '{"base_tree": $bt, "tree": $tree}')
+  NEW_TREE_SHA=$(echo "$PAYLOAD" | gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/trees" \
     --input - \
-    -f base_tree="$BASE_TREE_SHA" \
-    --jq '.sha' \
-    2>/dev/null) || {
-    # Fallback: construct the full payload manually
-    PAYLOAD=$(jq -n --arg bt "$BASE_TREE_SHA" --argjson tree "$TREE_ENTRIES" \
-      '{"base_tree": $bt, "tree": $tree}')
-    NEW_TREE_SHA=$(echo "$PAYLOAD" | gh api "/repos/${OWNER}/${REPO_NAME}/git/trees" \
-      --input - \
-      --jq '.sha') || {
-      echo "Error: Failed to create tree" >&2
-      exit 1
-    }
+    --jq '.sha') || {
+    echo "Error: Failed to create tree" >&2
+    exit 1
   }
 
   # Create commit
@@ -1062,7 +1136,7 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
     --arg tree "$NEW_TREE_SHA" \
     --arg parent "$COMMIT_SHA" \
     '{"message": $msg, "tree": $tree, "parents": [$parent]}' | \
-    gh api "/repos/${OWNER}/${REPO_NAME}/git/commits" \
+    gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/commits" \
     --input - \
     --jq '.sha') || {
     echo "Error: Failed to create commit" >&2
@@ -1070,7 +1144,7 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
   }
 
   # Update branch ref
-  gh api -X PATCH "/repos/${OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH}" \
+  gh_api_retry -X PATCH "/repos/${OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH}" \
     -f sha="$NEW_COMMIT_SHA" >/dev/null || {
     echo "Error: Failed to update branch ref. Another push may have occurred — try pulling first." >&2
     exit 1
@@ -1553,18 +1627,38 @@ git commit -m "feat(claude-plugin): add all 5 skill definitions"
 
 ---
 
-## Task 10: Cleanup Test Script
+## Task 10: Add Retry Wrapper Test
 
 **Files:**
-- Delete: `claude-plugin/scripts/test-lockfile.sh`
+- Modify: `claude-plugin/scripts/test-lockfile.sh`
 
-- [ ] **Step 1: Remove test script from repo**
+- [ ] **Step 1: Extend test script to verify gh_api_retry function**
 
-The test script was for development verification. Remove it before shipping:
+Add a test to `claude-plugin/scripts/test-lockfile.sh` that verifies `gh_api_retry` is callable (it requires `gh` and a network, so just verify the function exists and can be invoked with a known-good endpoint):
 
 ```bash
-git rm claude-plugin/scripts/test-lockfile.sh
-git commit -m "chore(claude-plugin): remove lockfile test script"
+# Add at the end of test-lockfile.sh, before "All lockfile tests passed":
+
+# Test gh_api_retry is available
+type gh_api_retry >/dev/null 2>&1 && echo "PASS: gh_api_retry function exists" || {
+  echo "FAIL: gh_api_retry not defined" >&2
+  exit 1
+}
+```
+
+- [ ] **Step 2: Run tests**
+
+```bash
+bash claude-plugin/scripts/test-lockfile.sh
+```
+
+Expected: All tests pass including the new gh_api_retry check.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add claude-plugin/scripts/test-lockfile.sh
+git commit -m "test(claude-plugin): add gh_api_retry function check"
 ```
 
 ---
