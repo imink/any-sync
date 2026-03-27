@@ -246,7 +246,7 @@ The VS Code extension and Claude plugin use **separate auth mechanisms** — the
 
 Required:
 - `gh` (GitHub CLI) — for all GitHub API calls
-- `bash` (4.0+) — for script execution
+- `bash` (3.2+) — for script execution. Scripts avoid bash 4+ features (associative arrays, `mapfile`, etc.) to support stock macOS bash. Git for Windows provides bash on Windows.
 - Standard POSIX utilities: `sha256sum` or `shasum`, `base64`, `mktemp`, `mv`
 
 Not required:
@@ -254,10 +254,18 @@ Not required:
 - `git` — not needed (all operations use GitHub REST API via `gh api`)
 - `node` — not needed
 
+### Path Resolution
+
+Config values like `~/.claude/skills` require explicit tilde expansion in scripts since tilde is not expanded inside quoted variables. Scripts use `"${path/#\~/$HOME}"` for tilde replacement.
+
+### Glob Matching (include/exclude)
+
+Shell scripts use bash `case` pattern matching with `extglob` for include/exclude glob evaluation. The `**` pattern (recursive match) is handled by iterating the flat tree from GitHub's API (which is already recursive), so each file path is matched individually against `include`/`exclude` patterns using `fnmatch`-style matching. This is simpler than the `minimatch` library used by the VS Code extension but handles the common patterns (`*.md`, `**/*.md`, `settings.json`).
+
 ### Pull (`any-sync-pull.sh`)
 
 ```
-Input: config path, lockfile path
+Input: config path, lockfile path (defaults to .any-sync.lock in cwd if omitted)
 For each mapping in config:
   1. Fetch repo tree via `gh api /repos/{owner}/{repo}/git/trees/{branch}?recursive=1`
   2. Filter tree entries by sourcePath prefix + include/exclude globs
@@ -269,7 +277,7 @@ For each mapping in config:
   4. Download changed blobs via `gh api /repos/{owner}/{repo}/git/blobs/{sha}`
   5. Decode base64 content, write to destPath atomically (write to tmp file, then mv)
   6. Update lockfile entry with new remoteSha and localHash (bare hex SHA-256)
-  7. Save lockfile
+  7. Save lockfile atomically (write to tmp file, then mv)
 Output: JSON summary { "pulled": [...], "conflicts": [...], "skipped": [...] }
 ```
 
@@ -278,7 +286,7 @@ Output: JSON summary { "pulled": [...], "conflicts": [...], "skipped": [...] }
 Push goes **directly to the configured branch** (default `main`). No PR creation, no temporary branch.
 
 ```
-Input: config path, lockfile path
+Input: config path, lockfile path (defaults to .any-sync.lock in cwd if omitted)
 For each mapping:
   1. Scan destPath for files matching include/exclude
   2. Hash each file (SHA-256, bare hex)
@@ -343,6 +351,8 @@ Output: confirmation message
 ---
 
 ## Skills (Slash Commands)
+
+Skills reference `${CLAUDE_PLUGIN_ROOT}` — an environment variable set by Claude Code at runtime that points to the plugin's root directory (i.e., `claude-plugin/`). This is a standard Claude Code plugin convention.
 
 ### `/any-sync:start` (Guided Wizard)
 
@@ -477,9 +487,11 @@ if [ -z "$TOKEN" ]; then
   exit 0  # No auth, skip silently
 fi
 
-# Run pull
-RESULT=$("${SCRIPT_DIR}/scripts/any-sync-pull.sh" "$CONFIG" 2>/dev/null)
-PULL_COUNT=$(echo "$RESULT" | grep -o '"pulled"' | wc -l 2>/dev/null || echo "0")
+# Run pull, passing lockfile path as second argument (defaults to .any-sync.lock in cwd)
+LOCKFILE=".any-sync.lock"
+RESULT=$("${SCRIPT_DIR}/scripts/any-sync-pull.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null)
+# Parse pulled file count from JSON array using gh's built-in jq
+PULL_COUNT=$(echo "$RESULT" | gh api --input - --jq '.pulled | length' 2>/dev/null || echo "0")
 
 # Output context for Claude using printf (avoids bash 5.3+ heredoc bug)
 printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "Any Sync: auto-pulled %s file(s) from GitHub. Use /any-sync:status for details."\n  }\n}\n' "$PULL_COUNT"
@@ -505,11 +517,13 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # Check for changes and push if found
-RESULT=$("${SCRIPT_DIR}/scripts/any-sync-status.sh" "$CONFIG" 2>/dev/null)
-HAS_CHANGES=$(echo "$RESULT" | grep -c '"changes"' 2>/dev/null || echo "0")
+LOCKFILE=".any-sync.lock"
+RESULT=$("${SCRIPT_DIR}/scripts/any-sync-status.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null)
+# Check if any mapping has a non-empty changes array
+HAS_CHANGES=$(echo "$RESULT" | gh api --input - --jq '[.mappings[].changes | length] | add // 0' 2>/dev/null || echo "0")
 
 if [ "$HAS_CHANGES" -gt 0 ]; then
-  "${SCRIPT_DIR}/scripts/any-sync-push.sh" "$CONFIG" 2>/dev/null
+  "${SCRIPT_DIR}/scripts/any-sync-push.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null
 fi
 ```
 
@@ -541,7 +555,7 @@ scripts/*.sh text eol=lf
 
 - **No auth:** Skills guide user through setup. Hooks fail silently (no auth = no sync).
 - **No config:** `/any-sync:start` creates one. Other commands report "no config found, run /any-sync:start".
-- **Network errors:** Shell scripts retry up to 3 times with exponential backoff (1s, 2s, 4s).
+- **Network errors:** Shell scripts wrap `gh api` calls with retry (up to 3 attempts, exponential backoff: 1s, 2s, 4s) on 5xx errors and network failures only. 4xx errors (auth, not found) fail immediately.
 - **Conflicts (pull):** Reported to user via skill. Claude helps resolve interactively (keep local / take remote / skip).
 - **Rate limits:** `gh api` handles rate limiting automatically (built-in retry).
 - **Missing `gh` CLI:** Error with setup instructions. `gh` is required — no `curl` fallback to avoid reimplementing the full Git Data API.
@@ -581,7 +595,7 @@ The Claude plugin is self-contained in the `claude-plugin/` directory. Users ins
 - **The `syncRepoUrl` VS Code setting** — not supported in Claude plugin (each mapping has its own `repo`)
 - **The `${copilotMemory}` path token** — VS Code only
 - **The `applyRemoteConfigAsDefault` behavior** — VS Code only (auto-merges remote config)
-- **Push mode** — VS Code creates PRs; Claude plugin pushes directly to branch
+- **Push mode** — Both platforms push directly to the configured branch, but through different mechanisms (VS Code uses Octokit/sparse git; Claude plugin uses `gh api`)
 
 ### Migration from legacy lockfile
 
