@@ -1,0 +1,110 @@
+{
+  "name": "@any-sync/vscode-extension",
+  "displayName": "Any Sync",
+  "description": "Bidirectional sync between GitHub repos and local directories",
+  "icon": "assets/logo.png",
+  "version": "0.1.9",
+  "publisher": "patrickw1029",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imink/skills-sync-plugin",
+    "directory": "packages/vscode-extension"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:any-sync.pull",
+    "onCommand:any-sync.push",
+    "onCommand:any-sync.pullSelect",
+    "onCommand:any-sync.pushSelect",
+    "onCommand:any-sync.initOrEditConfig",
+    "onCommand:any-sync.resetConfigAndAuth",
+    "onCommand:any-sync.showOutput"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "any-sync.pull",
+        "title": "Any Sync: Pull"
+      },
+      {
+        "command": "any-sync.push",
+        "title": "Any Sync: Push"
+      },
+      {
+        "command": "any-sync.pullSelect",
+        "title": "Any Sync: Pull (Select Mapping)"
+      },
+      {
+        "command": "any-sync.pushSelect",
+        "title": "Any Sync: Push (Select Mapping)"
+      },
+      {
+        "command": "any-sync.initOrEditConfig",
+        "title": "Any Sync: Init or Edit Config"
+      },
+      {
+        "command": "any-sync.resetConfigAndAuth",
+        "title": "Any Sync: Reset Config & Auth"
+      },
+      {
+        "command": "any-sync.showOutput",
+        "title": "Any Sync: Show Output"
+      }
+    ],
+    "configuration": {
+      "title": "Any Sync",
+      "properties": {
+        "any-sync.logLevel": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info",
+          "description": "Log level for Any Sync output"
+        },
+        "any-sync.syncRepoUrl": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub sync repository URL or owner/repo. Pull and push always use this value when set."
+        }
+      }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": ".any-sync.json",
+        "url": "./schemas/any-sync.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "compile:types": "tsc -p ./ --emitDeclarationOnly",
+    "watch": "node esbuild.js --watch",
+    "pretest": "tsc -p ./",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src",
+    "vscode:prepublish": "node esbuild.js --production",
+    "package": "npm run vscode:prepublish && npx @vscode/vsce package",
+    "publish": "npm run package && npx @vscode/vsce publish patch"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.0",
+    "minimatch": "^10.0.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.4.0",
+    "esbuild": "^0.27.4"
+  }
+}

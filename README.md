@@ -1,207 +1,98 @@
 # Any Sync
 
-![Any Sync Logo](assets/logo.png)
+![Any Sync Logo](packages/vscode-extension/assets/logo.png)
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/patrickw1029.any-sync?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync)
 
-Bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back directly to your configured branch.
+## Summary
 
-## Features
+Any Sync provides bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back directly.
 
-- **Pull from GitHub**: Download files from any GitHub repo directory to your local workspace
-- **Direct push**: Push local changes back to your configured GitHub branch
-- **Incremental sync**: Only downloads changed files using SHA-based tracking
-- **Conflict resolution**: Side-by-side diff view when both local and remote files have changed
-- **Flexible configuration**: Sync multiple repos/paths with include/exclude glob patterns
-- **No git required**: Falls back to GitHub REST API when git is not installed
-- **Secure auth**: Uses VSCode's built-in GitHub authentication, with `GITHUB_TOKEN` fallback
+This monorepo contains two packages:
 
-## Quick Start
+| Package | Path | Description |
+|---------|------|-------------|
+| **VS Code Extension** | `packages/vscode-extension` | Full-featured VS Code extension with UI, conflict resolution, and status bar |
+| **Claude Code Plugin** | `packages/claude-plugin` | Shell-based plugin for Claude Code with slash commands and automatic session hooks |
 
-1. Install the extension
-2. Open a workspace folder
-3. Run **"Any Sync: Init or Edit Config"** from the Command Palette (`Cmd+Shift+P`)
-4. Edit your mappings in `.any-sync.json`
-5. Run **"Any Sync: Pull"** to sync files
+Both share the same config format (`.any-sync.json`) and lockfile (`.any-sync.lock`), so you can use either tool interchangeably.
 
-## Configuration
+## How to Use
 
-Any Sync stores local `.any-sync.json` in VS Code extension storage (outside your repo) so Git will not track it. Use **"Any Sync: Init or Edit Config"** to open it.
+### VS Code Extension
 
-The repo used for sync can be controlled globally per workspace using the `any-sync.syncRepoUrl` setting. When this setting is provided, pull and push always use that repo value for all mappings.
+1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync), or build locally (see [Publishing](#publishing-the-vs-code-extension)).
+2. Open a workspace folder.
+3. Run **"Any Sync: Init or Edit Config"** from the Command Palette (`Cmd+Shift+P`).
+4. Edit your mappings in `.any-sync.json`:
+   ```json
+   {
+     "mappings": [
+       {
+         "name": "My Skills",
+         "repo": "username/my-repo",
+         "branch": "main",
+         "sourcePath": "src",
+         "destPath": "local/dest",
+         "include": ["**/*.md"],
+         "exclude": ["**/drafts/**"]
+       }
+     ]
+   }
+   ```
+5. Run **"Any Sync: Pull"** to sync files.
 
-- Accepted setting formats:
-  - `owner/repo`
-  - `https://github.com/owner/repo` (also accepts `.git` suffix)
-- If you enter a repo in the first-run prompt, Any Sync saves it into this setting automatically.
-
-Config format:
-
-```json
-{
-  "mappings": [
-    {
-      "name": "My Skills",
-      "repo": "username/my-repo",
-      "branch": "main",
-      "sourcePath": "src",
-      "destPath": "local/dest",
-      "include": ["**/*.md"],
-      "exclude": ["**/drafts/**"]
-    }
-  ]
-}
-```
-
-### Mapping options
+#### Mapping Options
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | ✅ | Human-readable name for this mapping |
-| `repo` | ✅ | GitHub repo in `owner/repo` format |
+| `name` | Yes | Human-readable name for this mapping |
+| `repo` | Yes | GitHub repo in `owner/repo` format |
 | `branch` | | Branch to sync from/push to (default: `main`) |
-| `sourcePath` | ✅ | Path within the repo to sync from |
-| `destPath` | ✅ | Local destination (relative to workspace root, or absolute) |
+| `sourcePath` | Yes | Path within the repo to sync from |
+| `destPath` | Yes | Local destination (relative to workspace root, or absolute) |
 | `include` | | Glob patterns to include (default: all files) |
 | `exclude` | | Glob patterns to exclude |
 
-### Path Tokens
+#### Path Tokens
 
-You can use path tokens in `destPath` for cross-device mappings:
+Use tokens in `destPath` for cross-device mappings:
 
 | Token | Resolves to |
 |-------|-------------|
 | `${copilotMemory}` | VS Code Copilot memory folder on the current OS |
 
-This token resolves to:
-- Windows: `C:\\Users\\<user>\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\memory-tool\\memories`
-- macOS: `~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/memory-tool/memories`
-- Linux: `~/.config/Code/User/globalStorage/github.copilot-chat/memory-tool/memories`
+#### Authentication
 
-Example mapping for cross-device Copilot memory sync:
+The extension uses VS Code's built-in GitHub authentication. On first run, VS Code will prompt you to sign in. Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scenarios.
 
-```json
-{
-  "name": "Copilot Memory",
-  "repo": "username/my-repo",
-  "branch": "main",
-  "sourcePath": "copilot-memory",
-  "destPath": "${copilotMemory}",
-  "include": ["**/*"],
-  "exclude": []
-}
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `Any Sync: Pull` | Pull all configured mappings |
-| `Any Sync: Pull (Select Mapping)` | Choose which mappings to pull |
-| `Any Sync: Push` | Push local changes for all mappings |
-| `Any Sync: Push (Select Mapping)` | Choose which mappings to push |
-| `Any Sync: Init or Edit Config` | Open local `.any-sync.json` for the current workspace (creates starter config if missing) |
-| `Any Sync: Reset Config & Auth` | Remove local Any Sync config and clear Any Sync GitHub auth preference |
-| `Any Sync: Show Output` | Open the extension's output channel |
-
-## How it works
-
-### Pull
-1. Reads your `.any-sync.json` configuration
-2. Fetches the directory tree from GitHub via REST API
-3. Compares remote file SHAs against the local lockfile (`.any-sync.lock`)
-4. Downloads only changed files, writing them atomically
-5. If both local and remote have changed, shows a conflict resolution dialog
-
-### Push
-1. Detects locally modified files by comparing content hashes
-2. Creates a temporary sparse git checkout (or uses REST API if git unavailable)
-3. Pushes changes directly to the configured branch (default: `main`)
-
-## Authentication
-
-The extension uses VSCode's built-in GitHub authentication by default. When you run a sync command for the first time, VSCode will prompt you to sign in to GitHub.
-
-Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scenarios.
-
-## Settings
+#### Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `any-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
-| `any-sync.syncRepoUrl` | `` | GitHub sync repository URL or `owner/repo`. Pull and push always use this value when set. |
+| `any-sync.syncRepoUrl` | | GitHub sync repo URL or `owner/repo`. When set, all mappings use this repo. |
 
-## Publishing to VS Code Marketplace
+### Claude Code Plugin
 
-### Prerequisites
-
-1. Create a publisher account on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage) if you don't have one.
-2. Generate a Personal Access Token (PAT) from [Azure DevOps](https://dev.azure.com) with the **Marketplace > Manage** scope.
-
-### Steps
-
-1. **Login** to your publisher account:
-   ```bash
-   npx @vscode/vsce login patrickw1029
-   ```
-   You will be prompted to enter your PAT.
-
-2. **Package** the extension into a `.vsix` file:
-   ```bash
-   npx @vscode/vsce package
-   ```
-   This builds and produces a file like `any-sync-0.1.0.vsix`.
-
-3. **Publish** the extension:
-   ```bash
-   npx @vscode/vsce publish
-   ```
-   This packages and uploads the extension to the Marketplace in one step.
-
-   To publish a specific version bump:
-   ```bash
-   npx @vscode/vsce publish minor   # 0.1.0 → 0.2.0
-   npx @vscode/vsce publish patch   # 0.1.0 → 0.1.1
-   ```
-
-4. **Verify** the extension is live on the [Marketplace](https://marketplace.visualstudio.com/).
-
-### Publishing a Pre-packaged VSIX
-
-If you already have a `.vsix` file:
-```bash
-npx @vscode/vsce publish --packagePath any-sync-0.1.0.vsix
-```
-
-### Unpublish
-
-To remove the extension from the Marketplace:
-```bash
-npx @vscode/vsce unpublish patrickw1029.any-sync
-```
-
-## Claude Code Plugin
-
-Any Sync is also available as a **Claude Code plugin** that syncs your Claude skills, memory, and settings across devices via GitHub using shell scripts and the `gh` CLI.
-
-### Prerequisites
+#### Prerequisites
 
 - [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
 - [`jq`](https://jqlang.github.io/jq/) installed
-- A GitHub repo to store synced files (e.g., `yourusername/claude-sync`)
+- A GitHub repo to store synced files
 - Claude Code v1.0.33+
 
-### Installation
+#### Installation
 
 ```bash
 # Add the marketplace (one-time)
-/plugin marketplace add imink/skills-sync-plugin --subdirectory claude-plugin
+/plugin marketplace add imink/skills-sync-plugin --subdirectory packages/claude-plugin
 
 # Install the plugin
 /plugin install any-sync@any-sync-marketplace
 ```
 
-### Setup
+#### Setup
 
 Run the guided setup wizard inside Claude Code:
 
@@ -209,9 +100,9 @@ Run the guided setup wizard inside Claude Code:
 /any-sync:start
 ```
 
-This will check your GitHub auth, ask for your sync repo, create a config with default Claude mappings (skills, memory, settings), and pull existing files.
+This checks your GitHub auth, asks for your sync repo, creates a config with default Claude mappings (skills, memory, settings), and pulls existing files.
 
-### Commands
+#### Commands
 
 | Command | Description |
 |---------|-------------|
@@ -221,25 +112,101 @@ This will check your GitHub auth, ask for your sync repo, create a config with d
 | `/any-sync:status` | Show sync state and pending changes |
 | `/any-sync:reset` | Remove config and lockfile |
 
-### Automatic Sync
+#### Automatic Sync
 
-The plugin includes session hooks that run automatically:
+The plugin includes session hooks:
 - **Session start** — auto-pulls latest files from GitHub
 - **Session end** — auto-pushes any local changes
 
 No manual sync needed for day-to-day use once set up.
 
-## Requirements
+## Features
+
+### Core
+- **Bidirectional sync** — pull from and push to any GitHub repo directory
+- **Incremental sync** — only downloads changed files using SHA-based tracking
+- **Conflict resolution** — side-by-side diff view when both local and remote have changed (VS Code) or interactive prompt (Claude Code)
+- **Flexible configuration** — sync multiple repos/paths with include/exclude glob patterns
+- **Cross-tool compatibility** — same config and lockfile format works in both VS Code and Claude Code
 
 ### VS Code Extension
-- VSCode 1.85.0 or later
-- A GitHub account (for authentication)
-- Git (optional, for push via sparse checkout — REST API fallback available)
+- **7 commands** — pull, push, selective pull/push, init config, reset, show output
+- **Status bar** — real-time sync state indicator (idle/syncing/success/error)
+- **JSON schema validation** — autocomplete and validation for `.any-sync.json`
+- **No git required** — falls back to GitHub REST API when git is not installed
+- **Secure auth** — uses VS Code's built-in GitHub authentication with `GITHUB_TOKEN` fallback
 
 ### Claude Code Plugin
-- Claude Code v1.0.33+
-- `gh` CLI (authenticated)
-- `jq`
+- **5 slash commands** — start, pull, push, status, reset
+- **Session hooks** — automatic pull on session start, push on session end
+- **Shell-based** — works anywhere `gh` and `jq` are available, no Node.js required
+
+## Publishing the VS Code Extension
+
+All commands below should be run from the monorepo root.
+
+### Prerequisites
+
+1. Create a publisher account on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage).
+2. Generate a Personal Access Token (PAT) from [Azure DevOps](https://dev.azure.com) with the **Marketplace > Manage** scope.
+
+### Login
+
+```bash
+cd packages/vscode-extension
+npx @vscode/vsce login patrickw1029
+```
+
+### Package
+
+```bash
+npm run package
+# Produces packages/vscode-extension/any-sync-<version>.vsix
+```
+
+### Publish
+
+```bash
+cd packages/vscode-extension
+npx @vscode/vsce publish          # publish current version
+npx @vscode/vsce publish patch    # bump patch and publish (0.1.9 -> 0.1.10)
+npx @vscode/vsce publish minor    # bump minor and publish (0.1.9 -> 0.2.0)
+```
+
+### Publish a Pre-packaged VSIX
+
+```bash
+cd packages/vscode-extension
+npx @vscode/vsce publish --packagePath any-sync-0.1.9.vsix
+```
+
+### Unpublish
+
+```bash
+npx @vscode/vsce unpublish patrickw1029.any-sync
+```
+
+## Development
+
+```bash
+# Install all dependencies
+npm install
+
+# Build the VS Code extension
+npm run build
+
+# Watch mode
+npm run watch
+
+# Run VS Code extension tests
+npm run test
+
+# Run all package tests
+npm run test:all
+
+# Lint
+npm run lint
+```
 
 ## License
 

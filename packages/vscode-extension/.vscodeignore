@@ -2,14 +2,7 @@
 .vscode-test/**
 src/**
 out/test/**
-.gitignore
-.eslintrc.json
-.prettierrc
 tsconfig.json
 esbuild.js
 **/*.map
 node_modules/**
-.worktrees/**
-.github-sync.lock
-CHANGELOG.md
-.claude/**
