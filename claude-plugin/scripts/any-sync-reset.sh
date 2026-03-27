@@ -25,5 +25,9 @@ if [ -f "$LOCKFILE_PATH" ]; then
   DELETED_LOCKFILE="true"
 fi
 
-printf '{"deletedConfig": %s, "configPath": "%s", "deletedLockfile": %s, "lockfilePath": "%s"}\n' \
-  "$DELETED_CONFIG" "$CONFIG_PATH" "$DELETED_LOCKFILE" "$LOCKFILE_PATH"
+jq -n \
+  --argjson deletedConfig "$DELETED_CONFIG" \
+  --arg configPath "$CONFIG_PATH" \
+  --argjson deletedLockfile "$DELETED_LOCKFILE" \
+  --arg lockfilePath "$LOCKFILE_PATH" \
+  '{deletedConfig: $deletedConfig, configPath: $configPath, deletedLockfile: $deletedLockfile, lockfilePath: $lockfilePath}'

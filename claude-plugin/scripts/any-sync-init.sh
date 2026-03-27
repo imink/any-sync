@@ -19,6 +19,12 @@ if ! echo "$REPO" | grep -qE '^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$'; then
   exit 1
 fi
 
+# Validate branch name (alphanumeric, hyphens, underscores, dots, slashes)
+if ! echo "$BRANCH" | grep -qE '^[a-zA-Z0-9._/-]+$'; then
+  echo "Error: Invalid branch name. Use alphanumeric characters, hyphens, underscores, dots, or slashes." >&2
+  exit 1
+fi
+
 # Check if config already exists
 if [ -f "$CONFIG_PATH" ]; then
   echo "$CONFIG_PATH"
@@ -28,35 +34,16 @@ fi
 # Create parent directory if needed
 mkdir -p "$(dirname "$CONFIG_PATH")"
 
-# Write default Claude mappings
-cat > "$CONFIG_PATH" << INITEOF
-{
-  "mappings": [
-    {
-      "name": "claude-skills",
-      "repo": "${REPO}",
-      "branch": "${BRANCH}",
-      "sourcePath": "skills",
-      "destPath": "~/.claude/skills",
-      "include": ["**/*.md"]
-    },
-    {
-      "name": "claude-memory",
-      "repo": "${REPO}",
-      "branch": "${BRANCH}",
-      "sourcePath": "memory",
-      "destPath": "~/.claude/memory"
-    },
-    {
-      "name": "claude-settings",
-      "repo": "${REPO}",
-      "branch": "${BRANCH}",
-      "sourcePath": "settings",
-      "destPath": "~/.claude",
-      "include": ["settings.json"]
-    }
-  ]
-}
-INITEOF
+# Write default Claude mappings using jq for safe JSON construction
+jq -n \
+  --arg repo "$REPO" \
+  --arg branch "$BRANCH" \
+  '{
+    mappings: [
+      {name: "claude-skills", repo: $repo, branch: $branch, sourcePath: "skills", destPath: "~/.claude/skills", include: ["**/*.md"]},
+      {name: "claude-memory", repo: $repo, branch: $branch, sourcePath: "memory", destPath: "~/.claude/memory"},
+      {name: "claude-settings", repo: $repo, branch: $branch, sourcePath: "settings", destPath: "~/.claude", include: ["settings.json"]}
+    ]
+  }' > "$CONFIG_PATH"
 
 echo "$CONFIG_PATH"
