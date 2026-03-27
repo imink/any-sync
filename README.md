@@ -1,6 +1,6 @@
 # Any Sync
 
-![Any Sync Logo](packages/vscode-extension/assets/logo.png)
+<img src="packages/vscode-extension/assets/logo.png" alt="Any Sync Logo" width="128">
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/patrickw1029.any-sync?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync)
 
