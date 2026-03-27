@@ -1074,11 +1074,11 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
         REPO_PATH="$REL_PATH"
       fi
 
-      # Create blob (base64 encoded)
-      BLOB_CONTENT=$(base64 < "$LOCAL_FILE")
-      BLOB_SHA=$(gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/blobs" \
-        -f content="$BLOB_CONTENT" \
-        -f encoding="base64" \
+      # Create blob (base64 encoded, pipe via --input to avoid ARG_MAX on large files)
+      BLOB_PAYLOAD=$(base64 < "$LOCAL_FILE" | jq -Rs '{"content": ., "encoding": "base64"}')
+      BLOB_SHA=$(echo "$BLOB_PAYLOAD" | \
+        gh_api_retry "/repos/${OWNER}/${REPO_NAME}/git/blobs" \
+        --input - \
         --jq '.sha') || {
         echo "Error: Failed to create blob for $REL_PATH" >&2
         exit 1
