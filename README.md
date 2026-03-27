@@ -180,11 +180,66 @@ To remove the extension from the Marketplace:
 npx @vscode/vsce unpublish patrickw1029.any-sync
 ```
 
+## Claude Code Plugin
+
+Any Sync is also available as a **Claude Code plugin** that syncs your Claude skills, memory, and settings across devices via GitHub using shell scripts and the `gh` CLI.
+
+### Prerequisites
+
+- [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
+- [`jq`](https://jqlang.github.io/jq/) installed
+- A GitHub repo to store synced files (e.g., `yourusername/claude-sync`)
+- Claude Code v1.0.33+
+
+### Installation
+
+```bash
+# Add the marketplace (one-time)
+/plugin marketplace add imink/skills-sync-plugin --subdirectory claude-plugin
+
+# Install the plugin
+/plugin install any-sync@any-sync-marketplace
+```
+
+### Setup
+
+Run the guided setup wizard inside Claude Code:
+
+```
+/any-sync:start
+```
+
+This will check your GitHub auth, ask for your sync repo, create a config with default Claude mappings (skills, memory, settings), and pull existing files.
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/any-sync:start` | Guided setup wizard |
+| `/any-sync:pull` | Pull latest files from GitHub |
+| `/any-sync:push` | Push local changes to GitHub |
+| `/any-sync:status` | Show sync state and pending changes |
+| `/any-sync:reset` | Remove config and lockfile |
+
+### Automatic Sync
+
+The plugin includes session hooks that run automatically:
+- **Session start** — auto-pulls latest files from GitHub
+- **Session end** — auto-pushes any local changes
+
+No manual sync needed for day-to-day use once set up.
+
 ## Requirements
 
+### VS Code Extension
 - VSCode 1.85.0 or later
 - A GitHub account (for authentication)
 - Git (optional, for push via sparse checkout — REST API fallback available)
+
+### Claude Code Plugin
+- Claude Code v1.0.33+
+- `gh` CLI (authenticated)
+- `jq`
 
 ## License
 
