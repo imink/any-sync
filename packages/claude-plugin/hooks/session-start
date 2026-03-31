@@ -1,6 +1,7 @@
 #!/bin/bash
 # Auto-pull on session start if config exists and auth is available
-SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SHARED_SCRIPTS="$(cd "${PLUGIN_DIR}/../shared-scripts" && pwd)"
 CONFIG="$HOME/.any-sync.json"
 if [ ! -f "$CONFIG" ] && [ -f ".any-sync.json" ]; then
   CONFIG=".any-sync.json"
@@ -15,7 +16,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 LOCKFILE=".any-sync.lock"
-RESULT=$("${SCRIPT_DIR}/scripts/any-sync-pull.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null) || exit 0
+RESULT=$("${SHARED_SCRIPTS}/any-sync-pull.sh" "$CONFIG" "$LOCKFILE" 2>/dev/null) || exit 0
 PULL_COUNT=$(echo "$RESULT" | jq '.pulled | length' 2>/dev/null || echo "0")
 
 if [ "$PULL_COUNT" -gt 0 ]; then

@@ -7,6 +7,11 @@ description: Pull latest files from GitHub sync repo
 
 Pull the latest files from the configured GitHub sync repo.
 
+Resolve the shared scripts path:
+```bash
+SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/../shared-scripts"
+```
+
 ## Steps
 
 ### 1. Find Config
@@ -16,7 +21,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 2. Run Pull
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/any-sync-pull.sh" "<config-path>" ".any-sync.lock"
+bash "${SHARED_SCRIPTS}/any-sync-pull.sh" "<config-path>" ".any-sync.lock"
 ```
 
 ### 3. Report Results

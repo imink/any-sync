@@ -1,0 +1,24 @@
+{
+  "name": "any-sync",
+  "version": "0.1.0",
+  "description": "Cross-device sync for OpenClaw workspace (skills, memory, settings) via GitHub",
+  "type": "module",
+  "main": "./out/index.js",
+  "openclaw": {
+    "extensions": ["./out/index.js"],
+    "hooks": ["./hooks/session-pull", "./hooks/session-push"],
+    "compat": {
+      "pluginApi": "1"
+    },
+    "build": {
+      "openclawVersion": "2026.3.28"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "bash ../shared-scripts/test-lockfile.sh"
+  },
+  "keywords": ["openclaw", "sync", "skills", "memory", "github", "workspace"],
+  "license": "MIT",
+  "repository": "https://github.com/imink/skills-sync-plugin"
+}

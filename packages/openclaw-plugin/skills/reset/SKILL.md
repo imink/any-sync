@@ -1,15 +1,20 @@
 ---
-name: reset
+name: any_sync_reset
 description: Clear Any Sync config and delete lockfile
+metadata:
+  openclaw:
+    requires:
+      bins: [jq]
 ---
 
 # Reset Any Sync
 
 Clear the Any Sync config and lockfile.
 
-Resolve the shared scripts path:
+Resolve script paths:
 ```bash
-SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/../shared-scripts"
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SHARED_SCRIPTS="$(cd "${PLUGIN_ROOT}/../shared-scripts" && pwd)"
 ```
 
 ## Steps
@@ -19,7 +24,7 @@ SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/../shared-scripts"
 Ask the user to confirm they want to reset. Explain that this will:
 - Delete the config file (`.any-sync.json`)
 - Delete the lockfile (`.any-sync.lock`)
-- NOT delete any synced files (skills, memory, settings remain on disk)
+- NOT delete any synced files (skills, memory, workspace config remain on disk)
 
 ### 2. Find Config
 
@@ -28,7 +33,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 3. Run Reset
 
 ```bash
-bash "${SHARED_SCRIPTS}/any-sync-reset.sh" "<config-path>" ".any-sync.lock"
+bash "$SHARED_SCRIPTS/any-sync-reset.sh" "<config-path>" ".any-sync.lock"
 ```
 
 ### 4. Report Results

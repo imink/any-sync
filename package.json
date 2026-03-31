@@ -1,7 +1,7 @@
 {
   "name": "any-sync-monorepo",
   "private": true,
-  "description": "Monorepo for Any Sync — VS Code extension and Claude Code plugin",
+  "description": "Monorepo for Any Sync — VS Code extension, Claude Code plugin, and OpenClaw plugin",
   "repository": {
     "type": "git",
     "url": "https://github.com/imink/skills-sync-plugin"

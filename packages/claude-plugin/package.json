@@ -10,6 +10,6 @@
     "directory": "packages/claude-plugin"
   },
   "scripts": {
-    "test": "bash scripts/test-lockfile.sh"
+    "test": "bash ../shared-scripts/test-lockfile.sh"
   }
 }

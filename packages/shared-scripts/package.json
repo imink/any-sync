@@ -1,0 +1,10 @@
+{
+  "name": "@any-sync/shared-scripts",
+  "version": "0.1.0",
+  "description": "Shared shell scripts for Any Sync plugins (auth, lockfile, pull, push, status, reset)",
+  "license": "MIT",
+  "repository": "https://github.com/imink/skills-sync-plugin",
+  "scripts": {
+    "test": "bash test-lockfile.sh"
+  }
+}
