@@ -11,7 +11,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm -w @any-sync/claude-plugin run build && npm -w @any-sync/vscode-extension run compile",
+    "build": "npm -w @any-sync/vscode-extension run compile",
     "watch": "npm -w @any-sync/vscode-extension run watch",
     "test": "npm -w @any-sync/vscode-extension run test",
     "test:all": "npm --workspaces run test",
