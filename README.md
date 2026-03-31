@@ -26,7 +26,7 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 
 | | VS Code Extension | Claude Code Plugin | OpenClaw Plugin |
 |---|---|---|---|
-| **Install** | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync) | `/plugin marketplace add imink/any-sync --subdirectory packages/claude-plugin` then `/plugin install any-sync@any-sync-marketplace` | `openclaw plugins install any-sync` |
+| **Install** | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync) | `/plugin marketplace add imink/any-sync` then `/plugin install any-sync@any-sync-marketplace` | `openclaw plugins install any-sync` |
 | **Prerequisites** | VS Code | `gh`, `jq`, Claude Code v1.0.33+ | `gh`, `jq`, OpenClaw |
 | **Setup** | Command Palette → "Any Sync: Init or Edit Config" | `/any-sync:start` | `/any-sync:start` |
 | **Pull** | Command Palette → "Any Sync: Pull" | `/any-sync:pull` | `/any-sync:pull` |
@@ -105,7 +105,7 @@ The extension uses VS Code's built-in GitHub authentication. On first run, VS Co
 
 ```bash
 # Add the marketplace (one-time)
-/plugin marketplace add imink/any-sync --subdirectory packages/claude-plugin
+/plugin marketplace add imink/any-sync
 
 # Install the plugin
 /plugin install any-sync@any-sync-marketplace
