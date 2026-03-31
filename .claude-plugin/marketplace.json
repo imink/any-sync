@@ -1,0 +1,13 @@
+{
+  "name": "any-sync-marketplace",
+  "owner": {
+    "name": "Any Sync Contributors"
+  },
+  "plugins": [
+    {
+      "name": "any-sync",
+      "source": "./packages/claude-plugin",
+      "description": "Cross-device sync for Claude skills, memory, settings, and custom files via GitHub"
+    }
+  ]
+}
