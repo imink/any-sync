@@ -16,6 +16,14 @@
 #   lockfile_make_key <mapping> <relpath>  — Print "mapping::relpath"
 #   gh_api_retry <args...>        — Retry gh api on 5xx/network errors (3 attempts, exponential backoff)
 
+# Windows/MSYS compatibility: convert MSYS paths to Windows paths for native binaries (e.g., jq.exe)
+_winpath() {
+  case "${OSTYPE:-}" in
+    msys*|cygwin*) cygpath -w "$1" 2>/dev/null || echo "$1" ;;
+    *) echo "$1" ;;
+  esac
+}
+
 # Detect hash command (macOS uses shasum, Linux uses sha256sum)
 if command -v sha256sum >/dev/null 2>&1; then
   _HASH_CMD="sha256sum"
@@ -110,7 +118,7 @@ gh_api_retry() {
   local exit_code
 
   while [ $attempt -lt $max_attempts ]; do
-    output=$(gh api "$@" 2>&1) && {
+    output=$(MSYS_NO_PATHCONV=1 gh api "$@" 2>&1) && {
       echo "$output"
       return 0
     }

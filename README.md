@@ -111,6 +111,12 @@ The extension uses VS Code's built-in GitHub authentication. On first run, VS Co
 /plugin install any-sync@any-sync-marketplace
 ```
 
+#### Update
+
+```bash
+/plugin update any-sync@any-sync-marketplace
+```
+
 #### Setup
 
 Run the guided setup wizard inside Claude Code:

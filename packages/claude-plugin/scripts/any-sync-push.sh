@@ -21,6 +21,9 @@ if [ ! -f "$CONFIG_PATH" ]; then
   exit 1
 fi
 
+# Convert paths for native Windows binaries (jq.exe)
+JQ_CONFIG_PATH=$(_winpath "$CONFIG_PATH")
+
 # Ensure auth
 TOKEN=$("${SCRIPT_DIR}/any-sync-auth.sh") || exit 1
 export GITHUB_TOKEN="$TOKEN"
@@ -30,14 +33,14 @@ lockfile_init "$LOCKFILE_PATH"
 ALL_PUSHED="[]"
 LAST_BRANCH=""
 
-MAPPING_COUNT=$(jq '.mappings | length' "$CONFIG_PATH")
+MAPPING_COUNT=$(jq '.mappings | length' "$JQ_CONFIG_PATH")
 
 for i in $(seq 0 $((MAPPING_COUNT - 1))); do
-  NAME=$(jq -r ".mappings[$i].name" "$CONFIG_PATH")
-  REPO=$(jq -r ".mappings[$i].repo" "$CONFIG_PATH")
-  BRANCH=$(jq -r ".mappings[$i].branch // \"main\"" "$CONFIG_PATH")
-  SOURCE_PATH=$(jq -r ".mappings[$i].sourcePath" "$CONFIG_PATH")
-  DEST_PATH=$(jq -r ".mappings[$i].destPath" "$CONFIG_PATH")
+  NAME=$(jq -r ".mappings[$i].name" "$JQ_CONFIG_PATH")
+  REPO=$(jq -r ".mappings[$i].repo" "$JQ_CONFIG_PATH")
+  BRANCH=$(jq -r ".mappings[$i].branch // \"main\"" "$JQ_CONFIG_PATH")
+  SOURCE_PATH=$(jq -r ".mappings[$i].sourcePath" "$JQ_CONFIG_PATH")
+  DEST_PATH=$(jq -r ".mappings[$i].destPath" "$JQ_CONFIG_PATH")
   LAST_BRANCH="$BRANCH"
 
   # Expand tilde
@@ -48,8 +51,8 @@ for i in $(seq 0 $((MAPPING_COUNT - 1))); do
   fi
 
   # Read include/exclude
-  INCLUDE_JSON=$(jq -c ".mappings[$i].include // []" "$CONFIG_PATH")
-  EXCLUDE_JSON=$(jq -c ".mappings[$i].exclude // []" "$CONFIG_PATH")
+  INCLUDE_JSON=$(jq -c ".mappings[$i].include // []" "$JQ_CONFIG_PATH")
+  EXCLUDE_JSON=$(jq -c ".mappings[$i].exclude // []" "$JQ_CONFIG_PATH")
 
   OWNER="${REPO%%/*}"
   REPO_NAME="${REPO##*/}"

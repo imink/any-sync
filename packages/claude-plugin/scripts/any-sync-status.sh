@@ -15,21 +15,24 @@ if [ -z "$CONFIG_PATH" ]; then
   exit 1
 fi
 
+# Convert paths for native Windows binaries (jq.exe)
+JQ_CONFIG_PATH=$(_winpath "$CONFIG_PATH")
+
 # Check auth
 AUTH_METHOD="none"
 AUTH_USER=""
 if [ -n "${GITHUB_TOKEN:-}" ]; then
   AUTH_METHOD="token"
-  AUTH_USER=$(gh api /user --jq '.login' 2>/dev/null) || AUTH_USER="unknown"
+  AUTH_USER=$(MSYS_NO_PATHCONV=1 gh api /user --jq '.login' 2>/dev/null) || AUTH_USER="unknown"
 elif command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
   AUTH_METHOD="gh"
-  AUTH_USER=$(gh api /user --jq '.login' 2>/dev/null) || AUTH_USER="unknown"
+  AUTH_USER=$(MSYS_NO_PATHCONV=1 gh api /user --jq '.login' 2>/dev/null) || AUTH_USER="unknown"
 fi
 
 # Check config
 CONFIG_VALID="false"
 if [ -f "$CONFIG_PATH" ]; then
-  if jq -e '.mappings | type == "array"' "$CONFIG_PATH" >/dev/null 2>&1; then
+  if jq -e '.mappings | type == "array"' "$JQ_CONFIG_PATH" >/dev/null 2>&1; then
     CONFIG_VALID="true"
   fi
 fi
@@ -39,12 +42,12 @@ lockfile_init "$LOCKFILE_PATH"
 
 MAPPINGS_JSON="[]"
 if [ "$CONFIG_VALID" = "true" ]; then
-  MAPPING_COUNT=$(jq '.mappings | length' "$CONFIG_PATH")
+  MAPPING_COUNT=$(jq '.mappings | length' "$JQ_CONFIG_PATH")
   for i in $(seq 0 $((MAPPING_COUNT - 1))); do
-    NAME=$(jq -r ".mappings[$i].name" "$CONFIG_PATH")
-    REPO=$(jq -r ".mappings[$i].repo" "$CONFIG_PATH")
-    BRANCH=$(jq -r ".mappings[$i].branch // \"main\"" "$CONFIG_PATH")
-    DEST_PATH=$(jq -r ".mappings[$i].destPath" "$CONFIG_PATH")
+    NAME=$(jq -r ".mappings[$i].name" "$JQ_CONFIG_PATH")
+    REPO=$(jq -r ".mappings[$i].repo" "$JQ_CONFIG_PATH")
+    BRANCH=$(jq -r ".mappings[$i].branch // \"main\"" "$JQ_CONFIG_PATH")
+    DEST_PATH=$(jq -r ".mappings[$i].destPath" "$JQ_CONFIG_PATH")
     LAST_SYNC=$(lockfile_get_last_sync "$NAME")
 
     # Expand tilde
@@ -73,8 +76,8 @@ if [ "$CONFIG_VALID" = "true" ]; then
     # Check for new files (not tracked in lockfile)
     if [ -d "$DEST_PATH" ]; then
       # Read include/exclude from config for filtering
-      INCLUDE_JSON=$(jq -c ".mappings[$i].include // []" "$CONFIG_PATH")
-      EXCLUDE_JSON=$(jq -c ".mappings[$i].exclude // []" "$CONFIG_PATH")
+      INCLUDE_JSON=$(jq -c ".mappings[$i].include // []" "$JQ_CONFIG_PATH")
+      EXCLUDE_JSON=$(jq -c ".mappings[$i].exclude // []" "$JQ_CONFIG_PATH")
       INCLUDE_COUNT=$(echo "$INCLUDE_JSON" | jq 'length')
       EXCLUDE_COUNT=$(echo "$EXCLUDE_JSON" | jq 'length')
 
