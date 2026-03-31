@@ -7,3 +7,12 @@ node_modules/
 .claude/settings.local.json
 .github-sync.json
 packages/*/out/
+
+# Shared scripts copied into claude-plugin at build time (source of truth: packages/shared-scripts/)
+packages/claude-plugin/scripts/any-sync-auth.sh
+packages/claude-plugin/scripts/any-sync-lockfile.sh
+packages/claude-plugin/scripts/any-sync-pull.sh
+packages/claude-plugin/scripts/any-sync-push.sh
+packages/claude-plugin/scripts/any-sync-reset.sh
+packages/claude-plugin/scripts/any-sync-status.sh
+packages/claude-plugin/scripts/test-lockfile.sh

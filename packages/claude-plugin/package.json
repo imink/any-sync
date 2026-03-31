@@ -10,6 +10,7 @@
     "directory": "packages/claude-plugin"
   },
   "scripts": {
-    "test": "bash scripts/test-lockfile.sh"
+    "build": "cp ../shared-scripts/any-sync-auth.sh ../shared-scripts/any-sync-lockfile.sh ../shared-scripts/any-sync-pull.sh ../shared-scripts/any-sync-push.sh ../shared-scripts/any-sync-reset.sh ../shared-scripts/any-sync-status.sh ../shared-scripts/test-lockfile.sh scripts/",
+    "test": "npm run build && bash scripts/test-lockfile.sh"
   }
 }
