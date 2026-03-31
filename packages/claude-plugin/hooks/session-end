@@ -1,7 +1,7 @@
 #!/bin/bash
 # Auto-push local changes on session end (direct to branch, no confirmation)
 PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SHARED_SCRIPTS="$(cd "${PLUGIN_DIR}/../shared-scripts" && pwd)"
+SHARED_SCRIPTS="${PLUGIN_DIR}/scripts"
 CONFIG="$HOME/.any-sync.json"
 if [ ! -f "$CONFIG" ] && [ -f ".any-sync.json" ]; then
   CONFIG=".any-sync.json"

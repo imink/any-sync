@@ -9,7 +9,7 @@ Push local changes directly to the configured branch on GitHub.
 
 Resolve the shared scripts path:
 ```bash
-SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/../shared-scripts"
+SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
 ```
 
 ## Steps

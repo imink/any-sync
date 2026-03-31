@@ -9,7 +9,7 @@ Pull the latest files from the configured GitHub sync repo.
 
 Resolve the shared scripts path:
 ```bash
-SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/../shared-scripts"
+SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
 ```
 
 ## Steps

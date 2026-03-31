@@ -9,7 +9,7 @@ Show the current sync status.
 
 Resolve the shared scripts path:
 ```bash
-SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/../shared-scripts"
+SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
 ```
 
 ## Steps
