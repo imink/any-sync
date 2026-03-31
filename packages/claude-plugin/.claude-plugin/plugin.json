@@ -5,8 +5,8 @@
   "author": {
     "name": "Any Sync Contributors"
   },
-  "homepage": "https://github.com/imink/skills-sync-plugin",
-  "repository": "https://github.com/imink/skills-sync-plugin",
+  "homepage": "https://github.com/imink/any-sync",
+  "repository": "https://github.com/imink/any-sync",
   "license": "MIT",
   "keywords": ["sync", "skills", "memory", "github", "cross-device"]
 }

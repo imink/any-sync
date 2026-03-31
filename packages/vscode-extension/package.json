@@ -7,7 +7,7 @@
   "publisher": "patrickw1029",
   "repository": {
     "type": "git",
-    "url": "https://github.com/imink/skills-sync-plugin",
+    "url": "https://github.com/imink/any-sync",
     "directory": "packages/vscode-extension"
   },
   "license": "MIT",

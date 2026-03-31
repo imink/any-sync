@@ -4,7 +4,7 @@
   "description": "Monorepo for Any Sync — VS Code extension, Claude Code plugin, and OpenClaw plugin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/imink/skills-sync-plugin"
+    "url": "https://github.com/imink/any-sync"
   },
   "license": "MIT",
   "workspaces": [

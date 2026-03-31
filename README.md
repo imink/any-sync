@@ -24,7 +24,7 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 
 | | VS Code Extension | Claude Code Plugin | OpenClaw Plugin |
 |---|---|---|---|
-| **Install** | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync) | `/plugin marketplace add imink/skills-sync-plugin --subdirectory packages/claude-plugin` then `/plugin install any-sync@any-sync-marketplace` | `openclaw plugins install any-sync` |
+| **Install** | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync) | `/plugin marketplace add imink/any-sync --subdirectory packages/claude-plugin` then `/plugin install any-sync@any-sync-marketplace` | `openclaw plugins install any-sync` |
 | **Prerequisites** | VS Code | `gh`, `jq`, Claude Code v1.0.33+ | `gh`, `jq`, OpenClaw |
 | **Setup** | Command Palette → "Any Sync: Init or Edit Config" | `/any-sync:start` | `/any-sync:start` |
 | **Pull** | Command Palette → "Any Sync: Pull" | `/any-sync:pull` | `/any-sync:pull` |
@@ -34,7 +34,7 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 | **Auto-sync** | Manual | Session hooks (pull on start, push on end) | Session hooks (pull on start, push on end) |
 | **Auth** | VS Code GitHub sign-in or `GITHUB_TOKEN` | `gh auth login` or `GITHUB_TOKEN` | `gh auth login` or `GITHUB_TOKEN` |
 | **Default sync paths** | Custom (user-configured) | `~/.claude/` (skills, memory, settings) | `~/.openclaw/workspace/` (skills, memory, AGENTS.md, SOUL.md, etc.) |
-| **Publish to** | [VS Code Marketplace](https://marketplace.visualstudio.com/) | [Claude Plugin Marketplace](https://github.com/imink/skills-sync-plugin) | [ClawHub](https://clawhub.dev) |
+| **Publish to** | [VS Code Marketplace](https://marketplace.visualstudio.com/) | [Claude Plugin Marketplace](https://github.com/imink/any-sync) | [ClawHub](https://clawhub.dev) |
 
 ### VS Code Extension
 
@@ -103,7 +103,7 @@ The extension uses VS Code's built-in GitHub authentication. On first run, VS Co
 
 ```bash
 # Add the marketplace (one-time)
-/plugin marketplace add imink/skills-sync-plugin --subdirectory packages/claude-plugin
+/plugin marketplace add imink/any-sync --subdirectory packages/claude-plugin
 
 # Install the plugin
 /plugin install any-sync@any-sync-marketplace
@@ -202,7 +202,7 @@ The plugin is published to [ClawHub](https://clawhub.dev):
 clawhub package publish ./packages/openclaw-plugin \
   --name any-sync \
   --family code-plugin \
-  --source-repo imink/skills-sync-plugin \
+  --source-repo imink/any-sync \
   --source-commit $(git rev-parse HEAD) \
   --source-ref main \
   --source-path packages/openclaw-plugin
