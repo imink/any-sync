@@ -1,5 +1,7 @@
 # Any Sync
 
+Any Sync 是一个跨工具的双向同步插件，通过 GitHub 在不同设备间同步 VS Code、Claude Code 和 OpenClaw 的技能、记忆和配置文件。
+
 <img src="packages/vscode-extension/assets/logo.png" alt="Any Sync Logo" width="128">
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/patrickw1029.any-sync?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync)
