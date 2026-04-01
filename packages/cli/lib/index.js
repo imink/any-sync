@@ -9,7 +9,8 @@ const { pull } = require('./pull');
 const { push } = require('./push');
 const { status } = require('./status');
 const { reset } = require('./reset');
-const { init } = require('./init');
+const { init, getPresetMappings } = require('./init');
+const { autoPull, autoPush } = require('./hooks');
 
 module.exports = {
   // Lockfile
@@ -36,4 +37,8 @@ module.exports = {
   status,
   reset,
   init,
+  // Presets & hooks
+  getPresetMappings,
+  autoPull,
+  autoPush,
 };

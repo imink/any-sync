@@ -16,7 +16,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "node --test ../shared-scripts/test/*.test.js"
+    "test": "node --test ../cli/test/*.test.js"
+  },
+  "dependencies": {
+    "@any-sync/cli": "*"
   },
   "keywords": ["openclaw", "sync", "skills", "memory", "github", "workspace"],
   "license": "MIT",

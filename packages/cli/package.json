@@ -1,0 +1,17 @@
+{
+  "name": "@any-sync/cli",
+  "version": "0.1.0",
+  "description": "CLI and core library for Any Sync — bidirectional GitHub file sync",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "bin": {
+    "any-sync": "bin/cli.js"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/imink/any-sync",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

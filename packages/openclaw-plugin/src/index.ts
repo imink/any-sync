@@ -1,50 +1,11 @@
 import { createRequire } from 'node:module';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-const sharedLib = require('../../shared-scripts/lib') as {
-  pull: (configPath: string, lockfilePath: string) => { pulled: string[] };
-  push: (configPath: string, lockfilePath: string) => { pushed: string[] };
-  status: (configPath: string, lockfilePath: string) => {
-    mappings: { changes: unknown[] }[];
-  };
-  findConfig: () => string | null;
-  getAuthToken: () => string | null;
+const { autoPull, autoPush } = require('@any-sync/cli') as {
+  autoPull: (lockfilePath?: string) => { pulled: string[] } | null;
+  autoPush: (lockfilePath?: string) => { pushed: string[] } | null;
 };
-
-async function autoPull(): Promise<number> {
-  const config = sharedLib.findConfig();
-  if (!config) return 0;
-
-  const token = sharedLib.getAuthToken();
-  if (!token) return 0;
-
-  const result = sharedLib.pull(config, '.any-sync.lock');
-  return result.pulled?.length ?? 0;
-}
-
-async function autoPush(): Promise<number> {
-  const config = sharedLib.findConfig();
-  if (!config) return 0;
-
-  const token = sharedLib.getAuthToken();
-  if (!token) return 0;
-
-  const statusResult = sharedLib.status(config, '.any-sync.lock');
-  const totalChanges =
-    statusResult.mappings?.reduce(
-      (sum: number, m: { changes: unknown[] }) => sum + (m.changes?.length ?? 0),
-      0,
-    ) ?? 0;
-
-  if (totalChanges === 0) return 0;
-
-  const pushResult = sharedLib.push(config, '.any-sync.lock');
-  return pushResult.pushed?.length ?? 0;
-}
 
 /**
  * OpenClaw plugin entry point for Any Sync.
@@ -68,7 +29,8 @@ const plugin = {
       api.registerHook('session_start', {
         handler: async () => {
           try {
-            const count = await autoPull();
+            const result = autoPull();
+            const count = result?.pulled?.length ?? 0;
             if (count > 0) {
               api.logger.info(`Any Sync: auto-pulled ${count} file(s) from GitHub`);
             }
@@ -81,7 +43,8 @@ const plugin = {
       api.registerHook('session_end', {
         handler: async () => {
           try {
-            const count = await autoPush();
+            const result = autoPush();
+            const count = result?.pushed?.length ?? 0;
             if (count > 0) {
               api.logger.info(`Any Sync: auto-pushed ${count} file(s) to GitHub`);
             }

@@ -76,3 +76,21 @@ export declare function init(
     exclude?: string[];
   }>,
 ): string;
+
+export declare function getPresetMappings(
+  preset: string,
+): Array<{
+  name: string;
+  sourcePath: string;
+  destPath: string;
+  include?: string[];
+  exclude?: string[];
+}> | null;
+
+export declare function autoPull(
+  lockfilePath?: string,
+): { pulled: string[]; conflicts: string[]; skipped: number } | null;
+
+export declare function autoPush(
+  lockfilePath?: string,
+): { pushed: string[]; branch: string } | null;

@@ -8,8 +8,5 @@
     "type": "git",
     "url": "https://github.com/imink/any-sync",
     "directory": "packages/claude-plugin"
-  },
-  "scripts": {
-    "test": "bash scripts/test-lockfile.sh"
   }
 }

@@ -1,26 +1,32 @@
 #!/usr/bin/env node
 'use strict';
 
-// Auto-pull on session start if config exists and auth is available
+// Auto-pull on session start using @any-sync/cli
+const { execFileSync } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 const os = require('os');
+const fs = require('fs');
 
-const pluginDir = path.resolve(__dirname, '..');
-const scriptsLib = path.join(pluginDir, 'scripts', 'lib');
-const { pull, findConfig, getAuthToken } = require(scriptsLib);
+// Find config (same logic as lib/config.js findConfig)
+const homeConfig = path.join(os.homedir(), '.any-sync.json');
+const localConfig = path.resolve('.any-sync.json');
+const configPath = fs.existsSync(homeConfig)
+  ? homeConfig
+  : fs.existsSync(localConfig)
+    ? localConfig
+    : null;
 
-const configPath = findConfig();
 if (!configPath) process.exit(0);
 
-const token = getAuthToken();
-if (!token) process.exit(0);
-
-const lockfilePath = '.any-sync.lock';
-
 try {
-  const result = pull(configPath, lockfilePath);
-  const pullCount = (result.pulled || []).length;
+  const result = execFileSync('npx', ['any-sync', 'pull', configPath, '.any-sync.lock'], {
+    encoding: 'utf8',
+    timeout: 60000,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  const parsed = JSON.parse(result);
+  const pullCount = (parsed.pulled || []).length;
 
   if (pullCount > 0) {
     const output = {

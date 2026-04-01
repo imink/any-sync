@@ -7,11 +7,6 @@ description: Show sync status — auth, config, last sync, pending changes
 
 Show the current sync status.
 
-Resolve the shared scripts path:
-```
-SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
-```
-
 ## Steps
 
 ### 1. Find Config
@@ -21,7 +16,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 2. Run Status
 
 ```bash
-node "${SCRIPTS}/status.js" "<config-path>" ".any-sync.lock"
+npx any-sync status "<config-path>" ".any-sync.lock"
 ```
 
 ### 3. Display Results

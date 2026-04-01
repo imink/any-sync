@@ -10,15 +10,16 @@ Any Sync 是一个跨工具的双向同步插件，通过 GitHub 在不同设备
 
 Any Sync provides bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back directly.
 
-This monorepo contains three packages:
+This monorepo contains four packages:
 
 | Package | Path | Description |
 |---------|------|-------------|
 | **VS Code Extension** | `packages/vscode-extension` | Full-featured VS Code extension with UI, conflict resolution, and status bar |
-| **Claude Code Plugin** | `packages/claude-plugin` | JavaScript-based plugin for Claude Code with slash commands and automatic session hooks |
+| **Claude Code Plugin** | `packages/claude-plugin` | Plugin for Claude Code with slash commands and automatic session hooks |
 | **OpenClaw Plugin** | `packages/openclaw-plugin` | OpenClaw plugin for syncing workspace (skills, memory, AGENTS.md, etc.) via GitHub |
+| **CLI** | `packages/cli` | Core sync engine and CLI (`any-sync pull/push/status/reset/auth/init`) |
 
-All packages share the same config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core JavaScript sync library (`packages/shared-scripts`), so you can use any tool interchangeably.
+All packages share the same config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core CLI (`@any-sync/cli`), so you can use any tool interchangeably.
 
 ## How to Use
 

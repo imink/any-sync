@@ -11,19 +11,13 @@ metadata:
 
 Guide the user through setting up Any Sync for cross-device workspace sync.
 
-Resolve script paths:
-```
-PLUGIN_ROOT — the openclaw-plugin package root
-SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
-```
-
 ## Steps
 
 ### 1. Check Authentication
 
 Run the auth check:
 ```bash
-node "${SHARED_SCRIPTS}/bin/auth.js"
+npx any-sync auth
 ```
 
 If it fails (exit code 1), help the user set up authentication:
@@ -45,20 +39,20 @@ Ask the user which items to sync (default: all three):
 - Memory (`~/.openclaw/workspace/memory`)
 - Config files (`AGENTS.md`, `SOUL.md`, `USER.md`, `TOOLS.md`, `IDENTITY.md`)
 
-Then run the init script (plugin-specific, not shared):
+Then run the init command with the OpenClaw preset:
 ```bash
-node "${PLUGIN_ROOT}/scripts/init.js" "$HOME/.any-sync.json" "<owner/repo>" "<branch>"
+npx any-sync init "$HOME/.any-sync.json" "<owner/repo>" "<branch>" --preset openclaw
 ```
 
 Use `main` as the default branch unless the user specifies otherwise.
 
-The init script respects `OPENCLAW_WORKSPACE` and `OPENCLAW_PROFILE` environment variables for custom workspace paths.
+The init command respects `OPENCLAW_WORKSPACE` and `OPENCLAW_PROFILE` environment variables for custom workspace paths.
 
 ### 4. First Pull
 
 Run the first pull to download existing files:
 ```bash
-node "${SHARED_SCRIPTS}/bin/pull.js" "$HOME/.any-sync.json" ".any-sync.lock"
+npx any-sync pull "$HOME/.any-sync.json" ".any-sync.lock"
 ```
 
 ### 5. Show Summary

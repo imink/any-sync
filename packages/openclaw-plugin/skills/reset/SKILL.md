@@ -10,12 +10,6 @@ metadata:
 
 Clear the Any Sync config and lockfile.
 
-Resolve script paths:
-```
-PLUGIN_ROOT — the openclaw-plugin package root
-SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
-```
-
 ## Steps
 
 ### 1. Confirm Reset
@@ -32,7 +26,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 3. Run Reset
 
 ```bash
-node "${SHARED_SCRIPTS}/bin/reset.js" "<config-path>" ".any-sync.lock"
+npx any-sync reset "<config-path>" ".any-sync.lock"
 ```
 
 ### 4. Report Results

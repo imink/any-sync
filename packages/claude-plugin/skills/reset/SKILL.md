@@ -7,11 +7,6 @@ description: Clear Any Sync config and delete lockfile
 
 Clear the Any Sync config and lockfile.
 
-Resolve the shared scripts path:
-```
-SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
-```
-
 ## Steps
 
 ### 1. Confirm Reset
@@ -28,7 +23,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 3. Run Reset
 
 ```bash
-node "${SCRIPTS}/reset.js" "<config-path>" ".any-sync.lock"
+npx any-sync reset "<config-path>" ".any-sync.lock"
 ```
 
 ### 4. Report Results

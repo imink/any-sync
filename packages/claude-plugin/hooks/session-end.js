@@ -1,29 +1,40 @@
 #!/usr/bin/env node
 'use strict';
 
-// Auto-push local changes on session end (direct to branch, no confirmation)
+// Auto-push local changes on session end using @any-sync/cli
+const { execFileSync } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 const os = require('os');
+const fs = require('fs');
 
-const pluginDir = path.resolve(__dirname, '..');
-const scriptsLib = path.join(pluginDir, 'scripts', 'lib');
-const { status, push, findConfig, getAuthToken } = require(scriptsLib);
+// Find config (same logic as lib/config.js findConfig)
+const homeConfig = path.join(os.homedir(), '.any-sync.json');
+const localConfig = path.resolve('.any-sync.json');
+const configPath = fs.existsSync(homeConfig)
+  ? homeConfig
+  : fs.existsSync(localConfig)
+    ? localConfig
+    : null;
 
-const configPath = findConfig();
 if (!configPath) process.exit(0);
 
-const token = getAuthToken();
-if (!token) process.exit(0);
-
-const lockfilePath = '.any-sync.lock';
-
 try {
-  const result = status(configPath, lockfilePath);
-  const hasChanges = (result.mappings || []).some(m => (m.changes || []).length > 0);
+  // Check for changes first
+  const statusOutput = execFileSync(
+    'npx',
+    ['any-sync', 'status', configPath, '.any-sync.lock'],
+    { encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] },
+  );
+
+  const statusResult = JSON.parse(statusOutput);
+  const hasChanges = (statusResult.mappings || []).some(m => (m.changes || []).length > 0);
 
   if (hasChanges) {
-    push(configPath, lockfilePath);
+    execFileSync('npx', ['any-sync', 'push', configPath, '.any-sync.lock'], {
+      encoding: 'utf8',
+      timeout: 60000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
   }
 } catch {
   // Silently exit on errors — don't block session end

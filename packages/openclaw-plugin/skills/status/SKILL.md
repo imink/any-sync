@@ -11,12 +11,6 @@ metadata:
 
 Show the current sync status for the OpenClaw workspace.
 
-Resolve script paths:
-```
-PLUGIN_ROOT — the openclaw-plugin package root
-SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
-```
-
 ## Steps
 
 ### 1. Find Config
@@ -26,7 +20,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 2. Run Status
 
 ```bash
-node "${SHARED_SCRIPTS}/bin/status.js" "<config-path>" ".any-sync.lock"
+npx any-sync status "<config-path>" ".any-sync.lock"
 ```
 
 ### 3. Display Results
