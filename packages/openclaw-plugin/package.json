@@ -1,5 +1,5 @@
 {
-  "name": "any-sync",
+  "name": "@any-sync/openclaw-plugin",
   "version": "0.2.0",
   "description": "Cross-device sync for OpenClaw workspace (skills, memory, settings) via GitHub",
   "type": "module",

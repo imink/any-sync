@@ -1,9 +1,9 @@
 {
-  "name": "@any-sync/vscode-extension",
+  "name": "any-sync",
   "displayName": "Any Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
   "icon": "assets/logo.png",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "publisher": "patrickw1029",
   "repository": {
     "type": "git",
