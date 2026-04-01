@@ -1,6 +1,6 @@
 {
   "name": "any-sync",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Cross-device sync for OpenClaw workspace (skills, memory, settings) via GitHub",
   "type": "module",
   "main": "./out/index.js",
