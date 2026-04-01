@@ -5,6 +5,9 @@ Any Sync 是一个跨工具的双向同步插件，通过 GitHub 在不同设备
 <img src="packages/vscode-extension/assets/logo.png" alt="Any Sync Logo" width="128">
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/patrickw1029.any-sync?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync)
+[![npm](https://img.shields.io/npm/v/@any-sync/cli?label=npm&logo=npm)](https://www.npmjs.com/package/@any-sync/cli)
+[![GitHub Release](https://img.shields.io/github/v/release/imink/any-sync?label=GitHub%20Release&logo=github)](https://github.com/imink/any-sync/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Summary
 
