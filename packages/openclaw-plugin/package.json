@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "bash ../shared-scripts/test-lockfile.sh"
+    "test": "node --test ../shared-scripts/test/*.test.js"
   },
   "keywords": ["openclaw", "sync", "skills", "memory", "github", "workspace"],
   "license": "MIT",

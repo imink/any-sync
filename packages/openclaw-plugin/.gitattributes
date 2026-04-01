@@ -1,2 +1,0 @@
-*.sh text eol=lf
-hooks/*/handler.ts text eol=lf

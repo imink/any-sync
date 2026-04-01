@@ -1,81 +1,49 @@
-import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SHARED_SCRIPTS = resolve(__dirname, '..', '..', 'shared-scripts');
+const require = createRequire(import.meta.url);
 
-function findConfig(): string | null {
-  const homeConfig = resolve(homedir(), '.any-sync.json');
-  if (existsSync(homeConfig)) return homeConfig;
-  const localConfig = resolve(process.cwd(), '.any-sync.json');
-  if (existsSync(localConfig)) return localConfig;
-  return null;
-}
-
-function getToken(): Promise<string | null> {
-  if (process.env.GITHUB_TOKEN) return Promise.resolve(process.env.GITHUB_TOKEN);
-  return new Promise((resolve) => {
-    execFile('gh', ['auth', 'token'], (err, stdout) => {
-      if (err || !stdout.trim()) return resolve(null);
-      resolve(stdout.trim());
-    });
-  });
-}
-
-function runScript(script: string, args: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    execFile('bash', [script, ...args], { timeout: 60000 }, (err, stdout, stderr) => {
-      if (err) return reject(new Error(stderr || err.message));
-      resolve(stdout);
-    });
-  });
-}
+const sharedLib = require('../../shared-scripts/lib') as {
+  pull: (configPath: string, lockfilePath: string) => { pulled: string[] };
+  push: (configPath: string, lockfilePath: string) => { pushed: string[] };
+  status: (configPath: string, lockfilePath: string) => {
+    mappings: { changes: unknown[] }[];
+  };
+  findConfig: () => string | null;
+  getAuthToken: () => string | null;
+};
 
 async function autoPull(): Promise<number> {
-  const config = findConfig();
+  const config = sharedLib.findConfig();
   if (!config) return 0;
 
-  const token = await getToken();
+  const token = sharedLib.getAuthToken();
   if (!token) return 0;
 
-  const result = await runScript(resolve(SHARED_SCRIPTS, 'any-sync-pull.sh'), [
-    config,
-    '.any-sync.lock',
-  ]);
-  const parsed = JSON.parse(result);
-  return parsed.pulled?.length ?? 0;
+  const result = sharedLib.pull(config, '.any-sync.lock');
+  return result.pulled?.length ?? 0;
 }
 
 async function autoPush(): Promise<number> {
-  const config = findConfig();
+  const config = sharedLib.findConfig();
   if (!config) return 0;
 
-  const token = await getToken();
+  const token = sharedLib.getAuthToken();
   if (!token) return 0;
 
-  // Check for changes first
-  const statusResult = await runScript(resolve(SHARED_SCRIPTS, 'any-sync-status.sh'), [
-    config,
-    '.any-sync.lock',
-  ]);
-  const status = JSON.parse(statusResult);
+  const statusResult = sharedLib.status(config, '.any-sync.lock');
   const totalChanges =
-    status.mappings?.reduce(
+    statusResult.mappings?.reduce(
       (sum: number, m: { changes: unknown[] }) => sum + (m.changes?.length ?? 0),
       0,
     ) ?? 0;
 
   if (totalChanges === 0) return 0;
 
-  const pushResult = await runScript(resolve(SHARED_SCRIPTS, 'any-sync-push.sh'), [
-    config,
-    '.any-sync.lock',
-  ]);
-  const parsed = JSON.parse(pushResult);
-  return parsed.pushed?.length ?? 0;
+  const pushResult = sharedLib.push(config, '.any-sync.lock');
+  return pushResult.pushed?.length ?? 0;
 }
 
 /**

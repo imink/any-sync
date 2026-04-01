@@ -3,10 +3,9 @@ name: session-pull
 description: Auto-pull workspace files from GitHub on session start
 metadata:
   openclaw:
-    emoji: "🔄"
     events: ["session_start"]
     requires:
-      bins: [jq, gh]
+      bins: [gh]
 ---
 
 # Session Pull Hook

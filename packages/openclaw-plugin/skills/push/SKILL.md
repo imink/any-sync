@@ -4,7 +4,7 @@ description: Push local workspace changes directly to configured branch on GitHu
 metadata:
   openclaw:
     requires:
-      bins: [jq, gh]
+      bins: [gh]
 ---
 
 # Push to GitHub
@@ -12,9 +12,9 @@ metadata:
 Push local workspace changes directly to the configured branch on GitHub.
 
 Resolve script paths:
-```bash
-PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SHARED_SCRIPTS="$(cd "${PLUGIN_ROOT}/../shared-scripts" && pwd)"
+```
+PLUGIN_ROOT — the openclaw-plugin package root
+SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
 ```
 
 ## Steps
@@ -27,7 +27,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 
 Run the status script to see what has changed:
 ```bash
-bash "$SHARED_SCRIPTS/any-sync-status.sh" "<config-path>" ".any-sync.lock"
+node "${SHARED_SCRIPTS}/bin/status.js" "<config-path>" ".any-sync.lock"
 ```
 
 Show the user which files have changed (modified or new) across all mappings.
@@ -43,7 +43,7 @@ Ask the user to confirm before pushing. Show:
 
 If confirmed:
 ```bash
-bash "$SHARED_SCRIPTS/any-sync-push.sh" "<config-path>" ".any-sync.lock"
+node "${SHARED_SCRIPTS}/bin/push.js" "<config-path>" ".any-sync.lock"
 ```
 
 ### 5. Report Results

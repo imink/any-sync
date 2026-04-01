@@ -15,10 +15,10 @@ This monorepo contains three packages:
 | Package | Path | Description |
 |---------|------|-------------|
 | **VS Code Extension** | `packages/vscode-extension` | Full-featured VS Code extension with UI, conflict resolution, and status bar |
-| **Claude Code Plugin** | `packages/claude-plugin` | Shell-based plugin for Claude Code with slash commands and automatic session hooks |
+| **Claude Code Plugin** | `packages/claude-plugin` | JavaScript-based plugin for Claude Code with slash commands and automatic session hooks |
 | **OpenClaw Plugin** | `packages/openclaw-plugin` | OpenClaw plugin for syncing workspace (skills, memory, AGENTS.md, etc.) via GitHub |
 
-All packages share the same config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core sync scripts (`packages/shared-scripts`), so you can use any tool interchangeably.
+All packages share the same config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core JavaScript sync library (`packages/shared-scripts`), so you can use any tool interchangeably.
 
 ## How to Use
 
@@ -27,7 +27,7 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 | | VS Code Extension | Claude Code Plugin | OpenClaw Plugin |
 |---|---|---|---|
 | **Install** | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync) | `/plugin marketplace add imink/any-sync` then `/plugin install any-sync@any-sync-marketplace` | `openclaw plugins install any-sync` |
-| **Prerequisites** | VS Code | `gh`, `jq`, Claude Code v1.0.33+ | `gh`, `jq`, OpenClaw |
+| **Prerequisites** | VS Code | `gh`, Node.js, Claude Code v1.0.33+ | `gh`, Node.js, OpenClaw |
 | **Setup** | Command Palette → "Any Sync: Init or Edit Config" | `/any-sync:start` | `/any-sync:start` |
 | **Pull** | Command Palette → "Any Sync: Pull" | `/any-sync:pull` | `/any-sync:pull` |
 | **Push** | Command Palette → "Any Sync: Push" | `/any-sync:push` | `/any-sync:push` |
@@ -97,7 +97,7 @@ The extension uses VS Code's built-in GitHub authentication. On first run, VS Co
 #### Prerequisites
 
 - [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
-- [`jq`](https://jqlang.github.io/jq/) installed
+- [Node.js](https://nodejs.org/) (v18+)
 - A GitHub repo to store synced files
 - Claude Code v1.0.33+
 
@@ -150,7 +150,7 @@ No manual sync needed for day-to-day use once set up.
 #### Prerequisites
 
 - [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
-- [`jq`](https://jqlang.github.io/jq/) installed
+- [Node.js](https://nodejs.org/) (v18+)
 - A GitHub repo to store synced files
 - [OpenClaw](https://docs.openclaw.ai/) installed
 
@@ -235,7 +235,7 @@ clawhub package publish ./packages/openclaw-plugin \
 ### Claude Code Plugin
 - **5 slash commands** — start, pull, push, status, reset
 - **Session hooks** — automatic pull on session start, push on session end
-- **Shell-based** — works anywhere `gh` and `jq` are available, no Node.js required
+- **Cross-platform** — JavaScript-based, works on Windows, macOS, and Linux
 
 ### OpenClaw Plugin
 - **5 slash commands** — start, pull, push, status, reset

@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Any Sync — a cross-tool bidirectional sync system that syncs files between GitHub repos and local directories. Supports VS Code, Claude Code, and OpenClaw via a shared config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core shell scripts.
+Any Sync — a cross-tool bidirectional sync system that syncs files between GitHub repos and local directories. Supports VS Code, Claude Code, and OpenClaw via a shared config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and a JavaScript core library.
 
 ## Monorepo Structure (npm workspaces)
 
 ```
 packages/
   vscode-extension/   — TypeScript VS Code extension (esbuild-bundled, Octokit + simple-git)
-  claude-plugin/      — Shell-based Claude Code plugin (SKILL.md slash commands + session hooks)
-  openclaw-plugin/    — OpenClaw plugin (TypeScript entry + shell skills/hooks)
-  shared-scripts/     — Core bash scripts shared by claude-plugin and openclaw-plugin
+  claude-plugin/      — Claude Code plugin (SKILL.md slash commands + JS session hooks)
+  openclaw-plugin/    — OpenClaw plugin (TypeScript entry + JS skills/hooks)
+  shared-scripts/     — Core JS sync library shared by claude-plugin and openclaw-plugin
 ```
 
 ## Build & Development Commands
@@ -30,12 +30,16 @@ npm run package          # Bundle VS Code extension into .vsix
 
 ## Architecture
 
-**Shared scripts** (`packages/shared-scripts/`): The core sync engine used by Claude and OpenClaw plugins. Each script is standalone bash:
-- `any-sync-pull.sh` — GitHub Tree API fetch, conflict detection, base64 blob download, lockfile update
-- `any-sync-push.sh` — Detect local changes, create git tree/commit/ref via GitHub API
-- `any-sync-lockfile.sh` — Lockfile CRUD, SHA-256 hashing, `gh_api_retry` with exponential backoff
-- `any-sync-auth.sh` — Auth via `GITHUB_TOKEN` env var or `gh auth token`
-- `any-sync-status.sh` / `any-sync-reset.sh`
+**Shared scripts** (`packages/shared-scripts/`): The core sync engine (JavaScript, zero npm deps). Library modules in `lib/`, CLI entry points in `bin/`, tests in `test/`:
+- `lib/pull.js` — GitHub Tree API fetch, conflict detection, base64 blob download, lockfile update
+- `lib/push.js` — Detect local changes, create git tree/commit/ref via GitHub API
+- `lib/lockfile.js` — Lockfile class (load/save/get/set), SHA-256 hashing
+- `lib/gh.js` — `gh` CLI wrapper with `ghApiRetry` (exponential backoff)
+- `lib/auth.js` — Auth via `GITHUB_TOKEN` env var or `gh auth token`
+- `lib/config.js` — Config loading, validation, tilde expansion
+- `lib/glob.js` — Inline glob matching (`*`, `**`, `?`)
+- `lib/status.js` / `lib/reset.js` / `lib/init.js`
+- `bin/pull.js`, `bin/push.js`, `bin/status.js`, `bin/reset.js`, `bin/auth.js` — thin CLI wrappers
 
 **VS Code extension** (`packages/vscode-extension/`): Independent TypeScript implementation (does NOT use shared scripts). Key classes:
 - `SyncEngine` orchestrates pull/push with progress/cancellation
@@ -44,16 +48,23 @@ npm run package          # Bundle VS Code extension into .vsix
 - `ConflictResolver` provides side-by-side diff view
 - Entry point: `src/extension.ts` → bundled to `out/extension.js` via esbuild
 
-**Claude plugin** (`packages/claude-plugin/`): No Node.js runtime needed. Skills are SKILL.md files that instruct Claude to run the shared bash scripts. Session hooks auto-pull on start, auto-push on end. Cross-platform hook wrapper (`run-hook.cmd`) is a bash/cmd polyglot.
+**Claude plugin** (`packages/claude-plugin/`): Self-contained — bundles a copy of the shared lib in `scripts/lib/`. Skills are SKILL.md files that instruct Claude to run `node` scripts. Session hooks (`hooks/session-start.js`, `hooks/session-end.js`) auto-pull on start, auto-push on end.
 
-**OpenClaw plugin** (`packages/openclaw-plugin/`): TypeScript entry (`src/index.ts`) registers hooks via the OpenClaw API. Also has SKILL.md skills and shell scripts. Profile-aware via `OPENCLAW_PROFILE`.
+**OpenClaw plugin** (`packages/openclaw-plugin/`): TypeScript entry (`src/index.ts`) imports `../../shared-scripts/lib` directly via `createRequire`. Also has SKILL.md skills and TypeScript hooks. Profile-aware via `OPENCLAW_PROFILE`.
 
 ## Key Conventions
 
 - Prettier: semicolons, single quotes, 2-space indent, trailing commas, 100 char width
 - TypeScript: strict mode, CommonJS output, ES2022 target
+- Shared scripts: zero npm deps, Node.js built-ins only (`fs`, `path`, `crypto`, `child_process`, `os`)
 - Config format: `.any-sync.json` with `mappings[]` array (name, repo, branch, sourcePath, destPath, include, exclude)
-- Lockfile: `.any-sync.lock` JSON with version 1, entries keyed by relative path containing `remoteSha`, `localHash` (SHA-256), `syncedAt`
+- Lockfile: `.any-sync.lock` JSON with version 1, entries keyed by `mapping::relpath` containing `remoteSha`, `localHash` (SHA-256), `syncedAt`
+
+## Prerequisites
+
+- **Node.js** (v18+) — script runtime
+- **`gh` CLI** — GitHub API calls and authentication
+- **npm** — workspace dependency management
 
 ## Plugin Installation (for testing)
 

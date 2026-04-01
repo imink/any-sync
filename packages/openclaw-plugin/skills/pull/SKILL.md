@@ -4,7 +4,7 @@ description: Pull latest workspace files from GitHub sync repo
 metadata:
   openclaw:
     requires:
-      bins: [jq, gh]
+      bins: [gh]
 ---
 
 # Pull from GitHub
@@ -12,9 +12,9 @@ metadata:
 Pull the latest files from the configured GitHub sync repo into the OpenClaw workspace.
 
 Resolve script paths:
-```bash
-PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SHARED_SCRIPTS="$(cd "${PLUGIN_ROOT}/../shared-scripts" && pwd)"
+```
+PLUGIN_ROOT — the openclaw-plugin package root
+SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
 ```
 
 ## Steps
@@ -26,7 +26,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 2. Run Pull
 
 ```bash
-bash "$SHARED_SCRIPTS/any-sync-pull.sh" "<config-path>" ".any-sync.lock"
+node "${SHARED_SCRIPTS}/bin/pull.js" "<config-path>" ".any-sync.lock"
 ```
 
 ### 3. Report Results

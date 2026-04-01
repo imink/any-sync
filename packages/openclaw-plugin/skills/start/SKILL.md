@@ -4,17 +4,17 @@ description: Initialize Any Sync config for OpenClaw workspace and run first pul
 metadata:
   openclaw:
     requires:
-      bins: [jq, gh]
+      bins: [gh]
 ---
 
 # Any Sync Setup Wizard
 
 Guide the user through setting up Any Sync for cross-device workspace sync.
 
-Resolve script paths relative to this skill's plugin root:
-```bash
-PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SHARED_SCRIPTS="$(cd "${PLUGIN_ROOT}/../shared-scripts" && pwd)"
+Resolve script paths:
+```
+PLUGIN_ROOT — the openclaw-plugin package root
+SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
 ```
 
 ## Steps
@@ -23,7 +23,7 @@ SHARED_SCRIPTS="$(cd "${PLUGIN_ROOT}/../shared-scripts" && pwd)"
 
 Run the auth check:
 ```bash
-bash "$SHARED_SCRIPTS/any-sync-auth.sh"
+node "${SHARED_SCRIPTS}/bin/auth.js"
 ```
 
 If it fails (exit code 1), help the user set up authentication:
@@ -47,7 +47,7 @@ Ask the user which items to sync (default: all three):
 
 Then run the init script (plugin-specific, not shared):
 ```bash
-bash "$PLUGIN_ROOT/scripts/any-sync-init.sh" "$HOME/.any-sync.json" "<owner/repo>" "<branch>"
+node "${PLUGIN_ROOT}/scripts/init.js" "$HOME/.any-sync.json" "<owner/repo>" "<branch>"
 ```
 
 Use `main` as the default branch unless the user specifies otherwise.
@@ -58,7 +58,7 @@ The init script respects `OPENCLAW_WORKSPACE` and `OPENCLAW_PROFILE` environment
 
 Run the first pull to download existing files:
 ```bash
-bash "$SHARED_SCRIPTS/any-sync-pull.sh" "$HOME/.any-sync.json" ".any-sync.lock"
+node "${SHARED_SCRIPTS}/bin/pull.js" "$HOME/.any-sync.json" ".any-sync.lock"
 ```
 
 ### 5. Show Summary

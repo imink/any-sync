@@ -4,7 +4,7 @@ description: Show workspace sync status — auth, config, last sync, pending cha
 metadata:
   openclaw:
     requires:
-      bins: [jq, gh]
+      bins: [gh]
 ---
 
 # Sync Status
@@ -12,9 +12,9 @@ metadata:
 Show the current sync status for the OpenClaw workspace.
 
 Resolve script paths:
-```bash
-PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SHARED_SCRIPTS="$(cd "${PLUGIN_ROOT}/../shared-scripts" && pwd)"
+```
+PLUGIN_ROOT — the openclaw-plugin package root
+SHARED_SCRIPTS="${PLUGIN_ROOT}/../shared-scripts"
 ```
 
 ## Steps
@@ -26,7 +26,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 2. Run Status
 
 ```bash
-bash "$SHARED_SCRIPTS/any-sync-status.sh" "<config-path>" ".any-sync.lock"
+node "${SHARED_SCRIPTS}/bin/status.js" "<config-path>" ".any-sync.lock"
 ```
 
 ### 3. Display Results

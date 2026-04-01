@@ -1,10 +1,11 @@
 {
   "name": "@any-sync/shared-scripts",
   "version": "0.1.0",
-  "description": "Shared shell scripts for Any Sync plugins (auth, lockfile, pull, push, status, reset)",
+  "description": "Shared sync engine for Any Sync plugins (auth, lockfile, pull, push, status, reset)",
+  "main": "lib/index.js",
   "license": "MIT",
   "repository": "https://github.com/imink/any-sync",
   "scripts": {
-    "test": "bash test-lockfile.sh"
+    "test": "node --test test/*.test.js"
   }
 }

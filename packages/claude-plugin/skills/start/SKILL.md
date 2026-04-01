@@ -8,8 +8,8 @@ description: Initialize Any Sync config and run first pull — guided setup wiza
 Guide the user through setting up Any Sync for cross-device sync.
 
 Resolve the shared scripts path:
-```bash
-SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
+```
+SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
 ```
 
 ## Steps
@@ -18,7 +18,7 @@ SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
 
 Run the auth check:
 ```bash
-bash "${SHARED_SCRIPTS}/any-sync-auth.sh"
+node "${SCRIPTS}/auth.js"
 ```
 
 If it fails (exit code 1), help the user set up authentication:
@@ -42,7 +42,7 @@ Ask the user which items to sync (default: all three):
 
 Then run the init script (this is plugin-specific, not shared):
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/any-sync-init.sh" "$HOME/.any-sync.json" "<owner/repo>" "<branch>"
+node "${SCRIPTS}/init.js" "$HOME/.any-sync.json" "<owner/repo>" "<branch>"
 ```
 
 Use `main` as the default branch unless the user specifies otherwise.
@@ -51,7 +51,7 @@ Use `main` as the default branch unless the user specifies otherwise.
 
 Run the first pull to download existing files:
 ```bash
-bash "${SHARED_SCRIPTS}/any-sync-pull.sh" "$HOME/.any-sync.json" ".any-sync.lock"
+node "${SCRIPTS}/pull.js" "$HOME/.any-sync.json" ".any-sync.lock"
 ```
 
 ### 5. Show Summary

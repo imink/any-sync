@@ -3,10 +3,9 @@ name: session-push
 description: Auto-push workspace changes to GitHub on session end
 metadata:
   openclaw:
-    emoji: "📤"
     events: ["session_end"]
     requires:
-      bins: [jq, gh]
+      bins: [gh]
 ---
 
 # Session Push Hook

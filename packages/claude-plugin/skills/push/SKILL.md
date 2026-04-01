@@ -8,8 +8,8 @@ description: Push local changes directly to configured branch on GitHub
 Push local changes directly to the configured branch on GitHub.
 
 Resolve the shared scripts path:
-```bash
-SHARED_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
+```
+SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts"
 ```
 
 ## Steps
@@ -22,7 +22,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 
 Run the status script to see what has changed:
 ```bash
-bash "${SHARED_SCRIPTS}/any-sync-status.sh" "<config-path>" ".any-sync.lock"
+node "${SCRIPTS}/status.js" "<config-path>" ".any-sync.lock"
 ```
 
 Show the user which files have changed (modified or new) across all mappings.
@@ -38,7 +38,7 @@ Ask the user to confirm before pushing. Show:
 
 If confirmed:
 ```bash
-bash "${SHARED_SCRIPTS}/any-sync-push.sh" "<config-path>" ".any-sync.lock"
+node "${SCRIPTS}/push.js" "<config-path>" ".any-sync.lock"
 ```
 
 ### 5. Report Results
