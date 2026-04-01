@@ -19,7 +19,7 @@ const configPath = fs.existsSync(homeConfig)
 if (!configPath) process.exit(0);
 
 try {
-  const result = execFileSync('npx', ['any-sync', 'pull', configPath, '.any-sync.lock'], {
+  const result = execFileSync('npx', ['@any-sync/cli', 'pull', configPath, '.any-sync.lock'], {
     encoding: 'utf8',
     timeout: 60000,
     stdio: ['pipe', 'pipe', 'pipe'],

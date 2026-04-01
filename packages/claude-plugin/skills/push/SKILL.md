@@ -17,7 +17,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 
 Run the status command to see what has changed:
 ```bash
-npx any-sync status "<config-path>" ".any-sync.lock"
+npx @any-sync/cli status "<config-path>" ".any-sync.lock"
 ```
 
 Show the user which files have changed (modified or new) across all mappings.
@@ -33,7 +33,7 @@ Ask the user to confirm before pushing. Show:
 
 If confirmed:
 ```bash
-npx any-sync push "<config-path>" ".any-sync.lock"
+npx @any-sync/cli push "<config-path>" ".any-sync.lock"
 ```
 
 ### 5. Report Results

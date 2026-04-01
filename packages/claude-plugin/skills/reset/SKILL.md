@@ -23,7 +23,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 3. Run Reset
 
 ```bash
-npx any-sync reset "<config-path>" ".any-sync.lock"
+npx @any-sync/cli reset "<config-path>" ".any-sync.lock"
 ```
 
 ### 4. Report Results

@@ -22,7 +22,7 @@ try {
   // Check for changes first
   const statusOutput = execFileSync(
     'npx',
-    ['any-sync', 'status', configPath, '.any-sync.lock'],
+    ['@any-sync/cli', 'status', configPath, '.any-sync.lock'],
     { encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] },
   );
 
@@ -30,7 +30,7 @@ try {
   const hasChanges = (statusResult.mappings || []).some(m => (m.changes || []).length > 0);
 
   if (hasChanges) {
-    execFileSync('npx', ['any-sync', 'push', configPath, '.any-sync.lock'], {
+    execFileSync('npx', ['@any-sync/cli', 'push', configPath, '.any-sync.lock'], {
       encoding: 'utf8',
       timeout: 60000,
       stdio: ['pipe', 'pipe', 'pipe'],

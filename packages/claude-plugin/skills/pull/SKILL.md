@@ -16,7 +16,7 @@ Look for config at `$HOME/.any-sync.json` first, then `.any-sync.json` in the cu
 ### 2. Run Pull
 
 ```bash
-npx any-sync pull "<config-path>" ".any-sync.lock"
+npx @any-sync/cli pull "<config-path>" ".any-sync.lock"
 ```
 
 ### 3. Report Results

@@ -13,7 +13,7 @@ Guide the user through setting up Any Sync for cross-device sync.
 
 Run the auth check:
 ```bash
-npx any-sync auth
+npx @any-sync/cli auth
 ```
 
 If it fails (exit code 1), help the user set up authentication:
@@ -37,7 +37,7 @@ Ask the user which items to sync (default: all three):
 
 Then run the init command with the Claude preset:
 ```bash
-npx any-sync init "$HOME/.any-sync.json" "<owner/repo>" "<branch>" --preset claude
+npx @any-sync/cli init "$HOME/.any-sync.json" "<owner/repo>" "<branch>" --preset claude
 ```
 
 Use `main` as the default branch unless the user specifies otherwise.
@@ -46,7 +46,7 @@ Use `main` as the default branch unless the user specifies otherwise.
 
 Run the first pull to download existing files:
 ```bash
-npx any-sync pull "$HOME/.any-sync.json" ".any-sync.lock"
+npx @any-sync/cli pull "$HOME/.any-sync.json" ".any-sync.lock"
 ```
 
 ### 5. Show Summary
