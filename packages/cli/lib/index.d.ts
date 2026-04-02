@@ -31,6 +31,8 @@ export declare function parseMapping(m: Record<string, unknown>): {
   exclude: string[];
 };
 
+export declare function saveConfig(configPath: string, config: { mappings: Array<Record<string, unknown>> }): void;
+
 export declare function checkAuth(): string;
 
 export declare function pull(configPath: string, lockfilePath: string): {
@@ -54,6 +56,7 @@ export declare function status(configPath: string, lockfilePath: string): {
     lastSync: string | null;
     tracked: number;
     changes: Array<{ file: string; type: string }>;
+    untracked: Array<{ file: string }>;
   }>;
 };
 

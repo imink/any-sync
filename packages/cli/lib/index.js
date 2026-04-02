@@ -3,7 +3,7 @@
 const { Lockfile, makeKey, hashFile } = require('./lockfile');
 const { ghApi, ghApiRetry, getAuthToken } = require('./gh');
 const { globMatch, matchesAny } = require('./glob');
-const { loadConfig, findConfig, expandTilde, parseMapping } = require('./config');
+const { loadConfig, findConfig, expandTilde, parseMapping, saveConfig } = require('./config');
 const { checkAuth } = require('./auth');
 const { pull } = require('./pull');
 const { push } = require('./push');
@@ -29,6 +29,7 @@ module.exports = {
   findConfig,
   expandTilde,
   parseMapping,
+  saveConfig,
   // Auth
   checkAuth,
   // Operations

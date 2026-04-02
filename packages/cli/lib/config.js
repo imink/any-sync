@@ -56,4 +56,13 @@ function parseMapping(m) {
   };
 }
 
-module.exports = { loadConfig, findConfig, expandTilde, parseMapping };
+/**
+ * Save a config object to disk atomically.
+ */
+function saveConfig(configPath, config) {
+  const tmpPath = configPath + '.tmp.' + process.pid;
+  fs.writeFileSync(tmpPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  fs.renameSync(tmpPath, configPath);
+}
+
+module.exports = { loadConfig, findConfig, expandTilde, parseMapping, saveConfig };

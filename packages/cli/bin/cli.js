@@ -12,6 +12,7 @@ const COMMANDS = {
   reset: 'Remove config and lockfile',
   auth: 'Check GitHub authentication',
   init: 'Create config file (use --preset for defaults)',
+  'update-config': 'Update config mappings (add include patterns)',
 };
 
 function usage() {
@@ -146,6 +147,47 @@ try {
       }
       const result = lib.init(configPath, repo, branch, mappings);
       process.stdout.write(result + '\n');
+      break;
+    }
+
+    case 'update-config': {
+      if (cmdArgs.includes('--help')) {
+        process.stdout.write(
+          'Usage: any-sync update-config <config-path> <mapping-name> --add-include <pattern> [--add-include <pattern> ...]\n',
+        );
+        process.exit(0);
+      }
+      const positional = [];
+      const addInclude = [];
+      for (let i = 0; i < cmdArgs.length; i++) {
+        if (cmdArgs[i] === '--add-include') {
+          addInclude.push(cmdArgs[++i]);
+        } else {
+          positional.push(cmdArgs[i]);
+        }
+      }
+      const configPath = positional[0];
+      const mappingName = positional[1];
+      if (!configPath || !mappingName || addInclude.length === 0) {
+        process.stderr.write(
+          'Usage: any-sync update-config <config-path> <mapping-name> --add-include <pattern> [--add-include <pattern> ...]\n',
+        );
+        process.exit(1);
+      }
+      const config = lib.loadConfig(configPath);
+      const mapping = config.mappings.find(m => m.name === mappingName);
+      if (!mapping) {
+        process.stderr.write(`Error: Mapping "${mappingName}" not found in config\n`);
+        process.exit(1);
+      }
+      if (!mapping.include) mapping.include = [];
+      for (const pattern of addInclude) {
+        if (!mapping.include.includes(pattern)) {
+          mapping.include.push(pattern);
+        }
+      }
+      lib.saveConfig(configPath, config);
+      process.stdout.write(JSON.stringify({ updated: mappingName, include: mapping.include }) + '\n');
       break;
     }
   }

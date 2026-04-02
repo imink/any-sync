@@ -94,17 +94,27 @@ function status(configPath, lockfilePath) {
         }
       }
 
-      // Check for new files
+      // Check for new and untracked files
+      const untracked = [];
       if (fs.existsSync(m.destPath)) {
         const localFiles = walkDir(m.destPath);
         for (const relPath of localFiles) {
-          // Apply include filter
-          if (m.include.length > 0 && !matchesAny(m.include, relPath)) continue;
-          // Apply exclude filter
+          // Apply exclude filter first — excluded files are never relevant
           if (m.exclude.length > 0 && matchesAny(m.exclude, relPath)) continue;
 
           const lockKey = makeKey(m.name, relPath);
-          if (!lf.getEntry(lockKey)) {
+          const isTracked = !!lf.getEntry(lockKey);
+
+          if (m.include.length > 0 && !matchesAny(m.include, relPath)) {
+            // File doesn't match include patterns — it's untracked (only if not already tracked)
+            if (!isTracked) {
+              untracked.push({ file: relPath });
+            }
+            continue;
+          }
+
+          // File matches filters — check if it's new
+          if (!isTracked) {
             changes.push({ file: relPath, type: 'new' });
           }
         }
@@ -117,6 +127,7 @@ function status(configPath, lockfilePath) {
         lastSync,
         trackedFiles,
         changes,
+        untracked,
       });
     }
   }

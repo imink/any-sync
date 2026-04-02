@@ -1,7 +1,7 @@
 {
   "name": "any-sync",
   "description": "Cross-device sync for Claude skills, memory, settings, and custom files via GitHub",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "Any Sync Contributors"
   },
