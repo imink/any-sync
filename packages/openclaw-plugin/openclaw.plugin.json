@@ -2,7 +2,7 @@
   "id": "any-sync",
   "name": "Any Sync",
   "description": "Cross-device sync for OpenClaw workspace (skills, memory, settings) via GitHub",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "skills": [
     "./skills/start",
     "./skills/pull",
