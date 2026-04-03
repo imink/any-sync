@@ -59,12 +59,11 @@ function getPresetMappings(preset) {
           destPath: '~/.claude/skills',
           include: ['**/*.md'],
         },
-        { name: 'claude-memory', sourcePath: 'memory', destPath: '~/.claude/memory' },
         {
-          name: 'claude-settings',
-          sourcePath: 'settings',
+          name: 'claude-config',
+          sourcePath: '.claude',
           destPath: '~/.claude',
-          include: ['settings.json'],
+          include: ['settings.json', 'CLAUDE.md', 'rules/**/*.md', 'agents/**/*.md', 'memory/**'],
         },
       ];
 
