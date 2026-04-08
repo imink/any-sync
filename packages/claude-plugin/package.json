@@ -1,7 +1,7 @@
 {
   "name": "@any-sync/claude-plugin",
   "description": "Claude Code plugin for cross-device sync of skills, memory, settings, and custom files via GitHub",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "private": true,
   "license": "MIT",
   "repository": {

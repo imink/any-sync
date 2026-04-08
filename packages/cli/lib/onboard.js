@@ -13,9 +13,22 @@ const { pull } = require('./pull');
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function isToolInstalled(name) {
-  const cmd = process.platform === 'win32' ? 'where' : 'which';
+  if (process.platform === 'win32') {
+    // Try 'where' (cmd) then 'powershell Get-Command' (PowerShell)
+    try {
+      execFileSync('where', [name], { stdio: 'pipe' });
+      return true;
+    } catch {
+      try {
+        execFileSync('powershell', ['-NoProfile', '-Command', `Get-Command ${name}`], { stdio: 'pipe' });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }
   try {
-    execFileSync(cmd, [name], { stdio: 'pipe' });
+    execFileSync('which', [name], { stdio: 'pipe' });
     return true;
   } catch {
     return false;
