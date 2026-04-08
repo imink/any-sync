@@ -3,7 +3,7 @@
   "displayName": "Any Sync",
   "description": "Bidirectional sync between GitHub repos and local directories",
   "icon": "assets/logo.png",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "publisher": "patrickw1029",
   "repository": {
     "type": "git",
@@ -95,7 +95,7 @@
     "lint": "eslint src",
     "vscode:prepublish": "node esbuild.js --production",
     "package": "npm run vscode:prepublish && npx @vscode/vsce package",
-    "publish": "npm run package && npx @vscode/vsce publish patch"
+    "publish": "npm run package && npx @vscode/vsce publish"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.0",

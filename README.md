@@ -13,16 +13,43 @@ Any Sync 是一个跨工具的双向同步插件，通过 GitHub 在不同设备
 
 Any Sync provides bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back directly.
 
-Supported tools:
+Supports VS Code, Claude Code, and OpenClaw — all sharing the same config format (`.any-sync.json`) and lockfile (`.any-sync.lock`).
 
-| Package | Description |
-|---------|-------------|
-| **VS Code Extension** | Full-featured VS Code extension with UI, conflict resolution, and status bar |
-| **Claude Code Plugin** | Plugin for Claude Code with slash commands and automatic session hooks |
-| **OpenClaw Plugin** | OpenClaw plugin for syncing workspace (skills, memory, AGENTS.md, etc.) via GitHub |
-| **CLI** | Core sync engine and CLI (`any-sync pull/push/status/reset/auth/init`) |
+## Quick Start
 
-All packages share the same config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core CLI (`@any-sync/cli`), so you can use any tool interchangeably.
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+)
+- [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
+
+### One-line setup
+
+```bash
+npx @any-sync/cli onboard
+```
+
+The wizard will:
+1. Check prerequisites (Node.js, `gh` CLI, GitHub auth)
+2. Detect your installed tools (Claude Code, OpenClaw, VS Code)
+3. Ask for your GitHub sync repo
+4. Create config with the right mappings for your tools
+5. Pull existing files from GitHub
+6. Show plugin install instructions for each detected tool
+
+That's it — you're syncing.
+
+### Non-interactive setup
+
+```bash
+# Set up for Claude Code only
+npx @any-sync/cli onboard --repo myuser/sync-repo --preset claude
+
+# Set up for multiple tools
+npx @any-sync/cli onboard --repo myuser/sync-repo --preset claude --preset openclaw --preset vscode
+
+# Skip initial pull
+npx @any-sync/cli onboard --repo myuser/sync-repo --preset claude --no-pull
+```
 
 ## Features
 
@@ -32,43 +59,58 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 - **Flexible configuration** — sync multiple repos/paths with include/exclude glob patterns
 - **Cross-tool compatibility** — same config and lockfile format across all tools
 
-## Quick Comparison
+## Tools
 
-| | VS Code Extension | Claude Code Plugin | OpenClaw Plugin |
-|---|---|---|---|
-| **Install** | [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync) | `/plugin marketplace add imink/any-sync` then `/plugin install any-sync@any-sync-marketplace` | `openclaw plugins install any-sync` |
-| **Prerequisites** | VS Code | `gh`, Node.js, Claude Code v1.0.33+ | `gh`, Node.js, OpenClaw |
-| **Setup** | Command Palette → "Any Sync: Init or Edit Config" | `/any-sync:start` | `/any-sync:start` |
-| **Pull** | Command Palette → "Any Sync: Pull" | `/any-sync:pull` | `/any-sync:pull` |
-| **Push** | Command Palette → "Any Sync: Push" | `/any-sync:push` | `/any-sync:push` |
-| **Status** | Status bar indicator | `/any-sync:status` | `/any-sync:status` |
-| **Reset** | Command Palette → "Any Sync: Reset" | `/any-sync:reset` | `/any-sync:reset` |
-| **Auto-sync** | Manual | Session hooks (pull on start, push on end) | Session hooks (pull on start, push on end) |
-| **Auth** | VS Code GitHub sign-in or `GITHUB_TOKEN` | `gh auth login` or `GITHUB_TOKEN` | `gh auth login` or `GITHUB_TOKEN` |
-| **Default sync paths** | Custom (user-configured) | `~/.claude/` (skills, memory, settings) | `~/.openclaw/workspace/` (skills, memory, AGENTS.md, SOUL.md, etc.) |
+### Claude Code Plugin
 
-## VS Code Extension
+After running `npx @any-sync/cli onboard`, install the plugin inside Claude Code:
 
-1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync).
-2. Open a workspace folder.
-3. Run **"Any Sync: Init or Edit Config"** from the Command Palette (`Cmd+Shift+P`).
-4. Edit your mappings in `.any-sync.json`:
-   ```json
-   {
-     "mappings": [
-       {
-         "name": "My Skills",
-         "repo": "username/my-repo",
-         "branch": "main",
-         "sourcePath": "src",
-         "destPath": "local/dest",
-         "include": ["**/*.md"],
-         "exclude": ["**/drafts/**"]
-       }
-     ]
-   }
-   ```
-5. Run **"Any Sync: Pull"** to sync files.
+```
+/plugin marketplace add imink/any-sync
+/plugin install any-sync@any-sync-marketplace
+```
+
+Update: `/plugin update any-sync@any-sync-marketplace`
+
+| Command | Description |
+|---------|-------------|
+| `/any-sync:start` | Guided setup wizard |
+| `/any-sync:pull` | Pull latest files from GitHub |
+| `/any-sync:push` | Push local changes to GitHub |
+| `/any-sync:status` | Show sync state and pending changes |
+| `/any-sync:reset` | Remove config and lockfile |
+
+Session hooks auto-pull on start and auto-push on end — no manual sync needed.
+
+### OpenClaw Plugin
+
+After running `npx @any-sync/cli onboard`, install the plugin:
+
+```bash
+openclaw plugins install any-sync
+```
+
+| Command | Description |
+|---------|-------------|
+| `/any-sync:start` | Guided setup wizard |
+| `/any-sync:pull` | Pull latest files from GitHub |
+| `/any-sync:push` | Push local changes to GitHub |
+| `/any-sync:status` | Show sync state and pending changes |
+| `/any-sync:reset` | Remove config and lockfile |
+
+Session hooks auto-pull on start and auto-push on end. Disable with `autoSync: false`.
+
+Respects `OPENCLAW_PROFILE` for multi-profile workspaces (`~/.openclaw/workspace-<profile>/`).
+
+### VS Code Extension
+
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync), or via the onboard wizard (`--preset vscode`).
+
+Use the Command Palette (`Cmd+Shift+P`) for all commands: Pull, Push, Init Config, Reset, etc.
+
+The extension uses VS Code's built-in GitHub authentication. Set `GITHUB_TOKEN` for headless/CI scenarios.
+
+## Configuration
 
 ### Mapping Options
 
@@ -84,134 +126,46 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 
 ### Path Tokens
 
-Use tokens in `destPath` for cross-device mappings:
-
 | Token | Resolves to |
 |-------|-------------|
 | `${copilotMemory}` | VS Code Copilot memory folder on the current OS |
 
-### Authentication
+### Example config
 
-The extension uses VS Code's built-in GitHub authentication. On first run, VS Code will prompt you to sign in. Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scenarios.
+```json
+{
+  "mappings": [
+    {
+      "name": "My Skills",
+      "repo": "username/my-repo",
+      "branch": "main",
+      "sourcePath": "src",
+      "destPath": "local/dest",
+      "include": ["**/*.md"],
+      "exclude": ["**/drafts/**"]
+    }
+  ]
+}
+```
 
-### Settings
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `any-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
-| `any-sync.syncRepoUrl` | | GitHub sync repo URL or `owner/repo`. When set, all mappings use this repo. |
-
-### VS Code Features
-
-- **7 commands** — pull, push, selective pull/push, init config, reset, show output
-- **Status bar** — real-time sync state indicator (idle/syncing/success/error)
-- **JSON schema validation** — autocomplete and validation for `.any-sync.json`
-- **No git required** — falls back to GitHub REST API when git is not installed
-- **Secure auth** — uses VS Code's built-in GitHub authentication with `GITHUB_TOKEN` fallback
-
-## Claude Code Plugin
-
-### Prerequisites
-
-- [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
-- [Node.js](https://nodejs.org/) (v18+)
-- A GitHub repo to store synced files
-- Claude Code v1.0.33+
-
-### Installation
+## CLI Reference
 
 ```bash
-# Add the marketplace (one-time)
-/plugin marketplace add imink/any-sync
-
-# Install the plugin
-/plugin install any-sync@any-sync-marketplace
+npx @any-sync/cli <command> [options]
 ```
-
-### Update
-
-```bash
-/plugin update any-sync@any-sync-marketplace
-```
-
-### Setup
-
-Run the guided setup wizard inside Claude Code:
-
-```
-/any-sync:start
-```
-
-This checks your GitHub auth, asks for your sync repo, creates a config with default Claude mappings (skills, memory, settings), and pulls existing files.
-
-### Commands
 
 | Command | Description |
 |---------|-------------|
-| `/any-sync:start` | Guided setup wizard |
-| `/any-sync:pull` | Pull latest files from GitHub |
-| `/any-sync:push` | Push local changes to GitHub |
-| `/any-sync:status` | Show sync state and pending changes |
-| `/any-sync:reset` | Remove config and lockfile |
+| `onboard` | Interactive setup wizard (zero to syncing) |
+| `pull` | Pull files from GitHub |
+| `push` | Push local changes to GitHub |
+| `status` | Show sync status |
+| `reset` | Remove config and lockfile |
+| `auth` | Check GitHub authentication |
+| `init` | Create config file with preset mappings |
+| `help` | Show detailed command help |
 
-### Automatic Sync
-
-The plugin includes session hooks:
-- **Session start** — auto-pulls latest files from GitHub
-- **Session end** — auto-pushes any local changes
-
-No manual sync needed for day-to-day use once set up.
-
-## OpenClaw Plugin
-
-### Prerequisites
-
-- [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
-- [Node.js](https://nodejs.org/) (v18+)
-- A GitHub repo to store synced files
-- [OpenClaw](https://docs.openclaw.ai/) installed
-
-### Installation
-
-```bash
-openclaw plugins install any-sync
-```
-
-### Setup
-
-Run the guided setup wizard:
-
-```
-/any-sync:start
-```
-
-This checks your GitHub auth, asks for your sync repo, and creates a config with default OpenClaw workspace mappings:
-
-| Mapping | Repo path | Local path |
-|---------|-----------|------------|
-| `workspace-skills` | `skills/` | `~/.openclaw/workspace/skills/` |
-| `workspace-memory` | `memory/` | `~/.openclaw/workspace/memory/` |
-| `workspace-config` | `config/` | `~/.openclaw/workspace/` (AGENTS.md, SOUL.md, USER.md, TOOLS.md, IDENTITY.md) |
-
-If `OPENCLAW_PROFILE` is set, the workspace path adjusts to `~/.openclaw/workspace-<profile>/`.
-
-### Commands
-
-| Command | Description |
-|---------|-------------|
-| `/any-sync:start` | Guided setup wizard |
-| `/any-sync:pull` | Pull latest files from GitHub |
-| `/any-sync:push` | Push local changes to GitHub |
-| `/any-sync:status` | Show sync state and pending changes |
-| `/any-sync:reset` | Remove config and lockfile |
-
-### Automatic Sync
-
-The plugin includes session hooks:
-- **Session start** — auto-pulls latest files from GitHub
-- **Session end** — auto-pushes any local changes
-
-Disable auto-sync by setting `autoSync: false` in the plugin config.
+Run `npx @any-sync/cli help <command>` for command-specific usage.
 
 ## Contributing
 

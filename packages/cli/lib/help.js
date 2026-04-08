@@ -2,49 +2,54 @@
 
 const COMMAND_HELP = {
   pull: {
-    usage: 'any-sync pull <config-path> [lockfile-path]',
+    usage: 'any-sync pull [config-path] [lockfile-path]',
     description:
       'Download files from GitHub that changed since the last sync.\n' +
-      '  Detects conflicts when both local and remote have been modified.',
+      '  Detects conflicts when both local and remote have been modified.\n' +
+      '  If no config path is given, searches ~/.any-sync.json then ./.any-sync.json.',
     options: [
-      { flag: '<config-path>', desc: 'Path to .any-sync.json config file (required)' },
-      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: .any-sync.lock)' },
+      { flag: '[config-path]', desc: 'Path to .any-sync.json (default: auto-detected)' },
+      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: alongside config)' },
     ],
-    examples: ['any-sync pull ~/.any-sync.json', 'any-sync pull .any-sync.json ./my.lock'],
+    examples: ['any-sync pull', 'any-sync pull ~/.any-sync.json', 'any-sync pull .any-sync.json ./my.lock'],
   },
 
   push: {
-    usage: 'any-sync push <config-path> [lockfile-path]',
+    usage: 'any-sync push [config-path] [lockfile-path]',
     description:
       'Upload local file changes to GitHub.\n' +
-      '  Creates a new commit on the configured branch for each mapping with changes.',
+      '  Creates a new commit on the configured branch for each mapping with changes.\n' +
+      '  If no config path is given, searches ~/.any-sync.json then ./.any-sync.json.',
     options: [
-      { flag: '<config-path>', desc: 'Path to .any-sync.json config file (required)' },
-      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: .any-sync.lock)' },
+      { flag: '[config-path]', desc: 'Path to .any-sync.json (default: auto-detected)' },
+      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: alongside config)' },
     ],
-    examples: ['any-sync push ~/.any-sync.json', 'any-sync push .any-sync.json ./my.lock'],
+    examples: ['any-sync push', 'any-sync push ~/.any-sync.json', 'any-sync push .any-sync.json ./my.lock'],
   },
 
   status: {
-    usage: 'any-sync status <config-path> [lockfile-path]',
+    usage: 'any-sync status [config-path] [lockfile-path]',
     description:
       'Show sync status including auth method, config validity,\n' +
-      '  tracked files, local changes, and untracked files per mapping.',
+      '  tracked files, local changes, and untracked files per mapping.\n' +
+      '  If no config path is given, searches ~/.any-sync.json then ./.any-sync.json.',
     options: [
-      { flag: '<config-path>', desc: 'Path to .any-sync.json config file (required)' },
-      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: .any-sync.lock)' },
+      { flag: '[config-path]', desc: 'Path to .any-sync.json (default: auto-detected)' },
+      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: alongside config)' },
     ],
-    examples: ['any-sync status ~/.any-sync.json'],
+    examples: ['any-sync status', 'any-sync status ~/.any-sync.json'],
   },
 
   reset: {
-    usage: 'any-sync reset <config-path> [lockfile-path]',
-    description: 'Remove config and lockfile to start fresh.',
+    usage: 'any-sync reset [config-path] [lockfile-path]',
+    description:
+      'Remove config and lockfile to start fresh.\n' +
+      '  If no config path is given, searches ~/.any-sync.json then ./.any-sync.json.',
     options: [
-      { flag: '<config-path>', desc: 'Path to .any-sync.json config file (required)' },
-      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: .any-sync.lock)' },
+      { flag: '[config-path]', desc: 'Path to .any-sync.json (default: auto-detected)' },
+      { flag: '[lockfile-path]', desc: 'Path to lockfile (default: alongside config)' },
     ],
-    examples: ['any-sync reset ~/.any-sync.json'],
+    examples: ['any-sync reset', 'any-sync reset ~/.any-sync.json'],
   },
 
   auth: {

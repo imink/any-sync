@@ -49,51 +49,59 @@ if (!COMMANDS[command]) {
 const lib = require('../lib');
 const cmdArgs = args.slice(1);
 
+function resolveConfigAndLock(cmdArgs) {
+  const configPath = cmdArgs[0] || lib.findConfig();
+  if (!configPath) {
+    process.stderr.write(
+      'No config found. Run "any-sync onboard" to set up, or pass a config path.\n',
+    );
+    process.exit(1);
+  }
+  const lockfilePath = cmdArgs[1] || path.join(path.dirname(configPath), '.any-sync.lock');
+  return { configPath, lockfilePath };
+}
+
 try {
   switch (command) {
     case 'pull': {
-      const configPath = cmdArgs[0];
-      const lockfilePath = cmdArgs[1] || '.any-sync.lock';
-      if (!configPath || cmdArgs.includes('--help')) {
-        process.stdout.write('Usage: any-sync pull <config-path> [lockfile-path]\n');
-        process.exit(cmdArgs.includes('--help') ? 0 : 1);
+      if (cmdArgs.includes('--help')) {
+        process.stdout.write('Usage: any-sync pull [config-path] [lockfile-path]\n');
+        process.exit(0);
       }
+      const { configPath, lockfilePath } = resolveConfigAndLock(cmdArgs);
       const result = lib.pull(configPath, lockfilePath);
       process.stdout.write(JSON.stringify(result, null, 2) + '\n');
       break;
     }
 
     case 'push': {
-      const configPath = cmdArgs[0];
-      const lockfilePath = cmdArgs[1] || '.any-sync.lock';
-      if (!configPath || cmdArgs.includes('--help')) {
-        process.stdout.write('Usage: any-sync push <config-path> [lockfile-path]\n');
-        process.exit(cmdArgs.includes('--help') ? 0 : 1);
+      if (cmdArgs.includes('--help')) {
+        process.stdout.write('Usage: any-sync push [config-path] [lockfile-path]\n');
+        process.exit(0);
       }
+      const { configPath, lockfilePath } = resolveConfigAndLock(cmdArgs);
       const result = lib.push(configPath, lockfilePath);
       process.stdout.write(JSON.stringify(result, null, 2) + '\n');
       break;
     }
 
     case 'status': {
-      const configPath = cmdArgs[0];
-      const lockfilePath = cmdArgs[1] || '.any-sync.lock';
-      if (!configPath || cmdArgs.includes('--help')) {
-        process.stdout.write('Usage: any-sync status <config-path> [lockfile-path]\n');
-        process.exit(cmdArgs.includes('--help') ? 0 : 1);
+      if (cmdArgs.includes('--help')) {
+        process.stdout.write('Usage: any-sync status [config-path] [lockfile-path]\n');
+        process.exit(0);
       }
+      const { configPath, lockfilePath } = resolveConfigAndLock(cmdArgs);
       const result = lib.status(configPath, lockfilePath);
       process.stdout.write(JSON.stringify(result, null, 2) + '\n');
       break;
     }
 
     case 'reset': {
-      const configPath = cmdArgs[0];
-      const lockfilePath = cmdArgs[1] || '.any-sync.lock';
-      if (!configPath || cmdArgs.includes('--help')) {
-        process.stdout.write('Usage: any-sync reset <config-path> [lockfile-path]\n');
-        process.exit(cmdArgs.includes('--help') ? 0 : 1);
+      if (cmdArgs.includes('--help')) {
+        process.stdout.write('Usage: any-sync reset [config-path] [lockfile-path]\n');
+        process.exit(0);
       }
+      const { configPath, lockfilePath } = resolveConfigAndLock(cmdArgs);
       const result = lib.reset(configPath, lockfilePath);
       process.stdout.write(JSON.stringify(result, null, 2) + '\n');
       break;
