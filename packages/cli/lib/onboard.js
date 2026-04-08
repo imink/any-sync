@@ -56,7 +56,7 @@ function write(output, text) {
 function detectTools() {
   return {
     gh: isToolInstalled('gh'),
-    claude: isToolInstalled('claude'),
+    claude: isToolInstalled('claude') || !!process.env.CLAUDE_CODE_ENTRYPOINT,
     openclaw: isToolInstalled('openclaw'),
     code: isToolInstalled('code'),
   };

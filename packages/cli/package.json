@@ -1,6 +1,6 @@
 {
   "name": "@any-sync/cli",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "CLI and core library for Any Sync — bidirectional GitHub file sync",
   "main": "lib/index.js",
   "exports": {
