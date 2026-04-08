@@ -13,20 +13,26 @@ Any Sync 是一个跨工具的双向同步插件，通过 GitHub 在不同设备
 
 Any Sync provides bidirectional sync between GitHub repositories and local directories. Pull files from any GitHub repo folder to your local workspace, and push changes back directly.
 
-This monorepo contains four packages:
+Supported tools:
 
-| Package | Path | Description |
-|---------|------|-------------|
-| **VS Code Extension** | `packages/vscode-extension` | Full-featured VS Code extension with UI, conflict resolution, and status bar |
-| **Claude Code Plugin** | `packages/claude-plugin` | Plugin for Claude Code with slash commands and automatic session hooks |
-| **OpenClaw Plugin** | `packages/openclaw-plugin` | OpenClaw plugin for syncing workspace (skills, memory, AGENTS.md, etc.) via GitHub |
-| **CLI** | `packages/cli` | Core sync engine and CLI (`any-sync pull/push/status/reset/auth/init`) |
+| Package | Description |
+|---------|-------------|
+| **VS Code Extension** | Full-featured VS Code extension with UI, conflict resolution, and status bar |
+| **Claude Code Plugin** | Plugin for Claude Code with slash commands and automatic session hooks |
+| **OpenClaw Plugin** | OpenClaw plugin for syncing workspace (skills, memory, AGENTS.md, etc.) via GitHub |
+| **CLI** | Core sync engine and CLI (`any-sync pull/push/status/reset/auth/init`) |
 
 All packages share the same config format (`.any-sync.json`), lockfile (`.any-sync.lock`), and core CLI (`@any-sync/cli`), so you can use any tool interchangeably.
 
-## How to Use
+## Features
 
-### Quick Comparison
+- **Bidirectional sync** — pull from and push to any GitHub repo directory
+- **Incremental sync** — only downloads changed files using SHA-based tracking
+- **Conflict resolution** — side-by-side diff view (VS Code) or interactive prompt (Claude Code)
+- **Flexible configuration** — sync multiple repos/paths with include/exclude glob patterns
+- **Cross-tool compatibility** — same config and lockfile format across all tools
+
+## Quick Comparison
 
 | | VS Code Extension | Claude Code Plugin | OpenClaw Plugin |
 |---|---|---|---|
@@ -40,11 +46,10 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 | **Auto-sync** | Manual | Session hooks (pull on start, push on end) | Session hooks (pull on start, push on end) |
 | **Auth** | VS Code GitHub sign-in or `GITHUB_TOKEN` | `gh auth login` or `GITHUB_TOKEN` | `gh auth login` or `GITHUB_TOKEN` |
 | **Default sync paths** | Custom (user-configured) | `~/.claude/` (skills, memory, settings) | `~/.openclaw/workspace/` (skills, memory, AGENTS.md, SOUL.md, etc.) |
-| **Publish to** | [VS Code Marketplace](https://marketplace.visualstudio.com/) | [Claude Plugin Marketplace](https://github.com/imink/any-sync) | [ClawHub](https://clawhub.dev) |
 
-### VS Code Extension
+## VS Code Extension
 
-1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync), or build locally (see [Publishing](#publishing-the-vs-code-extension)).
+1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=patrickw1029.any-sync).
 2. Open a workspace folder.
 3. Run **"Any Sync: Init or Edit Config"** from the Command Palette (`Cmd+Shift+P`).
 4. Edit your mappings in `.any-sync.json`:
@@ -65,7 +70,7 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
    ```
 5. Run **"Any Sync: Pull"** to sync files.
 
-#### Mapping Options
+### Mapping Options
 
 | Field | Required | Description |
 |-------|----------|-------------|
@@ -77,7 +82,7 @@ All packages share the same config format (`.any-sync.json`), lockfile (`.any-sy
 | `include` | | Glob patterns to include (default: all files) |
 | `exclude` | | Glob patterns to exclude |
 
-#### Path Tokens
+### Path Tokens
 
 Use tokens in `destPath` for cross-device mappings:
 
@@ -85,27 +90,35 @@ Use tokens in `destPath` for cross-device mappings:
 |-------|-------------|
 | `${copilotMemory}` | VS Code Copilot memory folder on the current OS |
 
-#### Authentication
+### Authentication
 
 The extension uses VS Code's built-in GitHub authentication. On first run, VS Code will prompt you to sign in. Alternatively, set the `GITHUB_TOKEN` environment variable for headless/CI scenarios.
 
-#### Settings
+### Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `any-sync.logLevel` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
 | `any-sync.syncRepoUrl` | | GitHub sync repo URL or `owner/repo`. When set, all mappings use this repo. |
 
-### Claude Code Plugin
+### VS Code Features
 
-#### Prerequisites
+- **7 commands** — pull, push, selective pull/push, init config, reset, show output
+- **Status bar** — real-time sync state indicator (idle/syncing/success/error)
+- **JSON schema validation** — autocomplete and validation for `.any-sync.json`
+- **No git required** — falls back to GitHub REST API when git is not installed
+- **Secure auth** — uses VS Code's built-in GitHub authentication with `GITHUB_TOKEN` fallback
+
+## Claude Code Plugin
+
+### Prerequisites
 
 - [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
 - [Node.js](https://nodejs.org/) (v18+)
 - A GitHub repo to store synced files
 - Claude Code v1.0.33+
 
-#### Installation
+### Installation
 
 ```bash
 # Add the marketplace (one-time)
@@ -115,13 +128,13 @@ The extension uses VS Code's built-in GitHub authentication. On first run, VS Co
 /plugin install any-sync@any-sync-marketplace
 ```
 
-#### Update
+### Update
 
 ```bash
 /plugin update any-sync@any-sync-marketplace
 ```
 
-#### Setup
+### Setup
 
 Run the guided setup wizard inside Claude Code:
 
@@ -131,7 +144,7 @@ Run the guided setup wizard inside Claude Code:
 
 This checks your GitHub auth, asks for your sync repo, creates a config with default Claude mappings (skills, memory, settings), and pulls existing files.
 
-#### Commands
+### Commands
 
 | Command | Description |
 |---------|-------------|
@@ -141,7 +154,7 @@ This checks your GitHub auth, asks for your sync repo, creates a config with def
 | `/any-sync:status` | Show sync state and pending changes |
 | `/any-sync:reset` | Remove config and lockfile |
 
-#### Automatic Sync
+### Automatic Sync
 
 The plugin includes session hooks:
 - **Session start** — auto-pulls latest files from GitHub
@@ -149,28 +162,22 @@ The plugin includes session hooks:
 
 No manual sync needed for day-to-day use once set up.
 
-### OpenClaw Plugin
+## OpenClaw Plugin
 
-#### Prerequisites
+### Prerequisites
 
 - [`gh` CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
 - [Node.js](https://nodejs.org/) (v18+)
 - A GitHub repo to store synced files
 - [OpenClaw](https://docs.openclaw.ai/) installed
 
-#### Installation
+### Installation
 
 ```bash
 openclaw plugins install any-sync
 ```
 
-Or install locally for development:
-
-```bash
-openclaw plugins install -l ./packages/openclaw-plugin
-```
-
-#### Setup
+### Setup
 
 Run the guided setup wizard:
 
@@ -188,7 +195,7 @@ This checks your GitHub auth, asks for your sync repo, and creates a config with
 
 If `OPENCLAW_PROFILE` is set, the workspace path adjusts to `~/.openclaw/workspace-<profile>/`.
 
-#### Commands
+### Commands
 
 | Command | Description |
 |---------|-------------|
@@ -198,7 +205,7 @@ If `OPENCLAW_PROFILE` is set, the workspace path adjusts to `~/.openclaw/workspa
 | `/any-sync:status` | Show sync state and pending changes |
 | `/any-sync:reset` | Remove config and lockfile |
 
-#### Automatic Sync
+### Automatic Sync
 
 The plugin includes session hooks:
 - **Session start** — auto-pulls latest files from GitHub
@@ -206,113 +213,9 @@ The plugin includes session hooks:
 
 Disable auto-sync by setting `autoSync: false` in the plugin config.
 
-#### Publishing
+## Contributing
 
-The plugin is published to [ClawHub](https://clawhub.dev):
-
-```bash
-clawhub package publish ./packages/openclaw-plugin \
-  --name any-sync \
-  --family code-plugin \
-  --source-repo imink/any-sync \
-  --source-commit $(git rev-parse HEAD) \
-  --source-ref main \
-  --source-path packages/openclaw-plugin
-```
-
-## Features
-
-### Core
-- **Bidirectional sync** — pull from and push to any GitHub repo directory
-- **Incremental sync** — only downloads changed files using SHA-based tracking
-- **Conflict resolution** — side-by-side diff view when both local and remote have changed (VS Code) or interactive prompt (Claude Code)
-- **Flexible configuration** — sync multiple repos/paths with include/exclude glob patterns
-- **Cross-tool compatibility** — same config and lockfile format works in both VS Code and Claude Code
-
-### VS Code Extension
-- **7 commands** — pull, push, selective pull/push, init config, reset, show output
-- **Status bar** — real-time sync state indicator (idle/syncing/success/error)
-- **JSON schema validation** — autocomplete and validation for `.any-sync.json`
-- **No git required** — falls back to GitHub REST API when git is not installed
-- **Secure auth** — uses VS Code's built-in GitHub authentication with `GITHUB_TOKEN` fallback
-
-### Claude Code Plugin
-- **5 slash commands** — start, pull, push, status, reset
-- **Session hooks** — automatic pull on session start, push on session end
-- **Cross-platform** — JavaScript-based, works on Windows, macOS, and Linux
-
-### OpenClaw Plugin
-- **5 slash commands** — start, pull, push, status, reset
-- **Session hooks** — automatic pull on session start, push on session end
-- **Profile-aware** — respects `OPENCLAW_PROFILE` for multi-profile workspaces
-- **ClawHub published** — install with `openclaw plugins install any-sync`
-
-## Publishing the VS Code Extension
-
-All commands below should be run from the monorepo root.
-
-### Prerequisites
-
-1. Create a publisher account on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage).
-2. Generate a Personal Access Token (PAT) from [Azure DevOps](https://dev.azure.com) with the **Marketplace > Manage** scope.
-
-### Login
-
-```bash
-cd packages/vscode-extension
-npx @vscode/vsce login patrickw1029
-```
-
-### Package
-
-```bash
-npm run package
-# Produces packages/vscode-extension/any-sync-<version>.vsix
-```
-
-### Publish
-
-```bash
-cd packages/vscode-extension
-npx @vscode/vsce publish          # publish current version
-npx @vscode/vsce publish patch    # bump patch and publish (0.1.9 -> 0.1.10)
-npx @vscode/vsce publish minor    # bump minor and publish (0.1.9 -> 0.2.0)
-```
-
-### Publish a Pre-packaged VSIX
-
-```bash
-cd packages/vscode-extension
-npx @vscode/vsce publish --packagePath any-sync-0.1.9.vsix
-```
-
-### Unpublish
-
-```bash
-npx @vscode/vsce unpublish patrickw1029.any-sync
-```
-
-## Development
-
-```bash
-# Install all dependencies
-npm install
-
-# Build the VS Code extension
-npm run build
-
-# Watch mode
-npm run watch
-
-# Run VS Code extension tests
-npm run test
-
-# Run all package tests
-npm run test:all
-
-# Lint
-npm run lint
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, building, testing, and publishing instructions.
 
 ## License
 

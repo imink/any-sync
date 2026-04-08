@@ -11,6 +11,8 @@ const { status } = require('./status');
 const { reset } = require('./reset');
 const { init, getPresetMappings } = require('./init');
 const { autoPull, autoPush } = require('./hooks');
+const { onboard, detectTools, mergePresetMappings } = require('./onboard');
+const { commandHelp, getCommandHelp } = require('./help');
 
 module.exports = {
   // Lockfile
@@ -42,4 +44,11 @@ module.exports = {
   getPresetMappings,
   autoPull,
   autoPush,
+  // Onboard
+  onboard,
+  detectTools,
+  mergePresetMappings,
+  // Help
+  commandHelp,
+  getCommandHelp,
 };

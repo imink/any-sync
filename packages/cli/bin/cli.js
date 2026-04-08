@@ -6,6 +6,7 @@ const path = require('path');
 const pkg = require('../package.json');
 
 const COMMANDS = {
+  onboard: 'Interactive setup wizard',
   pull: 'Pull files from GitHub',
   push: 'Push local changes to GitHub',
   status: 'Show sync status',
@@ -13,6 +14,7 @@ const COMMANDS = {
   auth: 'Check GitHub authentication',
   init: 'Create config file (use --preset for defaults)',
   'update-config': 'Update config mappings (add include patterns)',
+  help: 'Show detailed command help',
 };
 
 function usage() {
@@ -20,7 +22,7 @@ function usage() {
   process.stdout.write('Usage: any-sync <command> [options]\n\n');
   process.stdout.write('Commands:\n');
   for (const [cmd, desc] of Object.entries(COMMANDS)) {
-    process.stdout.write(`  ${cmd.padEnd(10)} ${desc}\n`);
+    process.stdout.write(`  ${cmd.padEnd(16)} ${desc}\n`);
   }
   process.stdout.write('\nRun any-sync <command> --help for command-specific usage.\n');
 }
@@ -188,6 +190,52 @@ try {
       }
       lib.saveConfig(configPath, config);
       process.stdout.write(JSON.stringify({ updated: mappingName, include: mapping.include }) + '\n');
+      break;
+    }
+
+    case 'help': {
+      const subcommand = cmdArgs[0];
+      if (!subcommand) {
+        usage();
+        process.exit(0);
+      }
+      const helpText = lib.commandHelp(subcommand);
+      if (!helpText) {
+        process.stderr.write(`Unknown command: ${subcommand}\n`);
+        process.stderr.write('Run any-sync --help for available commands.\n');
+        process.exit(1);
+      }
+      process.stdout.write(helpText + '\n');
+      break;
+    }
+
+    case 'onboard': {
+      if (cmdArgs.includes('--help')) {
+        const helpText = lib.commandHelp('onboard');
+        process.stdout.write(helpText + '\n');
+        process.exit(0);
+      }
+      const onboardOpts = {};
+      onboardOpts.presets = [];
+      for (let i = 0; i < cmdArgs.length; i++) {
+        if (cmdArgs[i] === '--repo') onboardOpts.repo = cmdArgs[++i];
+        else if (cmdArgs[i] === '--preset') onboardOpts.presets.push(cmdArgs[++i]);
+        else if (cmdArgs[i] === '--branch') onboardOpts.branch = cmdArgs[++i];
+        else if (cmdArgs[i] === '--config') onboardOpts.configPath = cmdArgs[++i];
+        else if (cmdArgs[i] === '--no-pull') onboardOpts.pull = false;
+        else if (cmdArgs[i] === '--force') onboardOpts.force = true;
+      }
+      if (onboardOpts.presets.length === 0) delete onboardOpts.presets;
+
+      lib
+        .onboard(onboardOpts)
+        .then((result) => {
+          process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+        })
+        .catch((err) => {
+          process.stderr.write('Error: ' + err.message + '\n');
+          process.exit(1);
+        });
       break;
     }
   }
