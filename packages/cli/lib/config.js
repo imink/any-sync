@@ -35,7 +35,7 @@ function findConfig() {
  * Expand ~ to home directory in a path.
  */
 function expandTilde(p) {
-  if (p.startsWith('~/') || p === '~') {
+  if (p === '~' || p.startsWith('~/') || p.startsWith('~' + path.sep)) {
     return path.join(os.homedir(), p.slice(1));
   }
   return p;

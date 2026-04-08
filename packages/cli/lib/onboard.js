@@ -13,8 +13,9 @@ const { pull } = require('./pull');
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function isToolInstalled(name) {
+  const cmd = process.platform === 'win32' ? 'where' : 'which';
   try {
-    execFileSync('which', [name], { stdio: 'pipe' });
+    execFileSync(cmd, [name], { stdio: 'pipe' });
     return true;
   } catch {
     return false;
