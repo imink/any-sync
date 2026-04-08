@@ -266,18 +266,54 @@ async function _runWizard({ rl, output, configPath, branch, doPull, opts }) {
   write(output, '\nNext steps:\n');
 
   if (presets.includes('claude')) {
-    const instructions =
-      'Run these commands inside Claude Code:\n' +
-      '  /plugin marketplace add imink/any-sync\n' +
-      '  /plugin install any-sync@any-sync-marketplace';
-    write(output, `\n  Claude Code plugin:\n    ${instructions.split('\n').join('\n    ')}\n`);
-    result.pluginInstructions.push({ tool: 'claude', instructions });
+    if (tools.claude) {
+      write(output, '\n  Installing Claude Code plugin...\n');
+      try {
+        execFileSync('claude', ['plugin', 'marketplace', 'add', 'imink/any-sync'], {
+          stdio: 'pipe',
+          encoding: 'utf8',
+        });
+        execFileSync('claude', ['plugin', 'install', 'any-sync@any-sync-marketplace'], {
+          stdio: 'pipe',
+          encoding: 'utf8',
+        });
+        write(output, '    Any Sync plugin installed successfully.\n');
+        result.pluginInstructions.push({ tool: 'claude', installed: true });
+      } catch (err) {
+        write(output, `    Install failed: ${err.message}\n`);
+        write(output, '    Install manually inside Claude Code:\n');
+        write(output, '      /plugin marketplace add imink/any-sync\n');
+        write(output, '      /plugin install any-sync@any-sync-marketplace\n');
+        result.pluginInstructions.push({ tool: 'claude', installed: false });
+      }
+    } else {
+      write(output, '\n  Claude Code not found. Install the plugin manually inside Claude Code:\n');
+      write(output, '    /plugin marketplace add imink/any-sync\n');
+      write(output, '    /plugin install any-sync@any-sync-marketplace\n');
+      result.pluginInstructions.push({ tool: 'claude', installed: false });
+    }
   }
 
   if (presets.includes('openclaw')) {
-    const instructions = 'Run: openclaw plugins install any-sync';
-    write(output, `\n  OpenClaw plugin:\n    ${instructions}\n`);
-    result.pluginInstructions.push({ tool: 'openclaw', instructions });
+    if (tools.openclaw) {
+      write(output, '\n  Installing OpenClaw plugin...\n');
+      try {
+        execFileSync('openclaw', ['plugins', 'install', 'any-sync'], {
+          stdio: 'pipe',
+          encoding: 'utf8',
+        });
+        write(output, '    Any Sync plugin installed successfully.\n');
+        result.pluginInstructions.push({ tool: 'openclaw', installed: true });
+      } catch (err) {
+        write(output, `    Install failed: ${err.message}\n`);
+        write(output, '    Install manually: openclaw plugins install any-sync\n');
+        result.pluginInstructions.push({ tool: 'openclaw', installed: false });
+      }
+    } else {
+      write(output, '\n  OpenClaw not found. Install the plugin manually:\n');
+      write(output, '    openclaw plugins install any-sync\n');
+      result.pluginInstructions.push({ tool: 'openclaw', installed: false });
+    }
   }
 
   if (installVscode) {
