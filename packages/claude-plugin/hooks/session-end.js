@@ -2,7 +2,8 @@
 'use strict';
 
 // Auto-push local changes on session end using @any-sync/cli
-const { execFileSync } = require('child_process');
+// Uses detached spawn so the hook exits immediately and doesn't get cancelled.
+const { spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -18,25 +19,24 @@ const configPath = fs.existsSync(homeConfig)
 
 if (!configPath) process.exit(0);
 
-try {
-  // Check for changes first
-  const statusOutput = execFileSync(
-    'npx',
-    ['@any-sync/cli', 'status', configPath, '.any-sync.lock'],
-    { encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] },
-  );
+const lockfilePath = path.join(path.dirname(configPath), '.any-sync.lock');
 
-  const statusResult = JSON.parse(statusOutput);
-  const hasChanges = (statusResult.mappings || []).some(m => (m.changes || []).length > 0);
+// Spawn a detached process that checks for changes and pushes if needed.
+// This lets the hook script exit immediately so Claude Code doesn't cancel it.
+const script = `
+  const cli = require('@any-sync/cli');
+  try {
+    const st = cli.status(${JSON.stringify(configPath)}, ${JSON.stringify(lockfilePath)});
+    const hasChanges = (st.mappings || []).some(m => (m.changes || []).length > 0);
+    if (hasChanges) {
+      cli.push(${JSON.stringify(configPath)}, ${JSON.stringify(lockfilePath)});
+    }
+  } catch {}
+`;
 
-  if (hasChanges) {
-    execFileSync('npx', ['@any-sync/cli', 'push', configPath, '.any-sync.lock'], {
-      encoding: 'utf8',
-      timeout: 60000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-  }
-} catch {
-  // Silently exit on errors — don't block session end
-  process.exit(0);
-}
+const child = spawn(process.execPath, ['-e', script], {
+  detached: true,
+  stdio: 'ignore',
+  env: { ...process.env },
+});
+child.unref();

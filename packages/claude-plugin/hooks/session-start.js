@@ -2,7 +2,7 @@
 'use strict';
 
 // Auto-pull on session start using @any-sync/cli
-const { execFileSync } = require('child_process');
+// Uses direct require instead of npx for speed.
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -18,15 +18,12 @@ const configPath = fs.existsSync(homeConfig)
 
 if (!configPath) process.exit(0);
 
-try {
-  const result = execFileSync('npx', ['@any-sync/cli', 'pull', configPath, '.any-sync.lock'], {
-    encoding: 'utf8',
-    timeout: 60000,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+const lockfilePath = path.join(path.dirname(configPath), '.any-sync.lock');
 
-  const parsed = JSON.parse(result);
-  const pullCount = (parsed.pulled || []).length;
+try {
+  const cli = require('@any-sync/cli');
+  const result = cli.pull(configPath, lockfilePath);
+  const pullCount = (result.pulled || []).length;
 
   if (pullCount > 0) {
     const output = {
